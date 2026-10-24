@@ -1,0 +1,85 @@
+--- a/vllm/model_executor/layers/quantization/inc/config_parser.py
++++ b/vllm/model_executor/layers/quantization/inc/config_parser.py
+@@ -1,6 +1,8 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
++import json
++import os
+ from dataclasses import dataclass
+ from typing import TYPE_CHECKING
+ 
+@@ -79,10 +81,61 @@
+         layer_config = self.resolve(layer, layer_name)
+         return layer_config.bits, layer_config.group_size, layer_config.sym
+ 
++    def _mtp_checkpoint_name(self, layer_name: str) -> str:
++        """Recipe change: the engine numbers the MTP layer after the decoder layers
++        (mtp.layers.48), AutoRound's extra_config by its own index (mtp.layers.0);
++        when no entry names the engine's index and the config has one MTP layer,
++        look that one up."""
++        m = re.search(r"(?:^|\.)mtp\.layers\.(\d+)\.", layer_name)
++        extra = self._config.extra_config
++        if m is None or not extra:
++            return layer_name
++        if any(k.startswith(f"mtp.layers.{m.group(1)}.") for k in extra):
++            return layer_name
++        indices = {k.split(".")[2] for k in extra if k.startswith("mtp.layers.")}
++        if len(indices) != 1:
++            return layer_name
++        return layer_name.replace(f"mtp.layers.{m.group(1)}.", f"mtp.layers.{indices.pop()}.", 1)
++
++    def _mtp_pack_plan_experts(
++        self, layer: "torch.nn.Module", layer_name: str
++    ) -> tuple[int, int, bool] | None:
++        """Recipe change: a checkpoint's mtp_pack_plan.json (klee100's 3 bpw MTP build) lists
++        MTP experts packed at 4 bits that extra_config does not mention; their packed
++        shapes (qweight 8 values per int32, one scale per 128 inputs) give groups of 128."""
++        if "mtp." not in layer_name or layer.__class__.__name__.lower() not in (
++            "routedexperts", "fusedmoe"
++        ):
++            return None
++        plan = getattr(self, "_mtp_plan", False)
++        if plan is False:
++            plan = None
++            try:
++                from vllm.config import get_current_vllm_config
++
++                path = os.path.join(
++                    get_current_vllm_config().model_config.model, "mtp_pack_plan.json"
++                )
++                if os.path.exists(path):
++                    with open(path) as f:
++                        plan = json.load(f)
++            except Exception:  # noqa: BLE001 - no config or no plan: the usual rules
++                plan = None
++            self._mtp_plan = plan
++        if not plan:
++            return None
++        if any(m.startswith(layer_name + ".") for m in plan.get("expanded_expert_modules_w4", ())):
++            return 4, 128, True
++        return None
++
+     def _resolve_raw(
+         self, layer: "torch.nn.Module", layer_name: str
+     ) -> tuple[int, int | tuple[int, int], bool]:
+         REGEX_SPECIAL_CHARS = set(r"*+?^$()[]{}|\\")
++        layer_name = self._mtp_checkpoint_name(layer_name)
++        packed = self._mtp_pack_plan_experts(layer, layer_name)
++        if packed is not None:
++            return packed
+ 
+         def is_explicitly_configured(name: str) -> bool:
+             """Return True if *name* has an explicit entry in extra_config,
+@@ -175,7 +228,10 @@
+                 for name in self._config.block_name_to_quantize
+             )
+ 
+-        if self._config.extra_config and "fusedmoe" in layer.__class__.__name__.lower():
++        # RoutedExperts is this engine's fused-MoE layer; without it the per-layer
++        # expert overrides are skipped and every expert layer gets the default bits.
++        moe_class = layer.__class__.__name__.lower()
++        if self._config.extra_config and ("fusedmoe" in moe_class or moe_class == "routedexperts"):
+             moe_configs = [
+                 get_config(name, quantized)
+                 for name in self._config.extra_config

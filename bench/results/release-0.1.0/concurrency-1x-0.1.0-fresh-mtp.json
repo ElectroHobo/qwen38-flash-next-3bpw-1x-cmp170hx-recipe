@@ -1,0 +1,119 @@
+{
+ "tag": "1x-0.1.0-fresh-mtp",
+ "model": "qwen3.8-flash-next",
+ "tokens": 700,
+ "rounds": [
+  {
+   "users": 1,
+   "tokens": 700,
+   "wall_s": 4.239,
+   "aggregate_tok_s": 165.1,
+   "ms_per_step": 18.43,
+   "tokens_per_request_step": 3.057
+  },
+  {
+   "users": 1,
+   "tokens": 700,
+   "wall_s": 4.182,
+   "aggregate_tok_s": 167.4,
+   "ms_per_step": 18.42,
+   "tokens_per_request_step": 3.097
+  },
+  {
+   "users": 4,
+   "tokens": 2800,
+   "wall_s": 7.136,
+   "aggregate_tok_s": 392.4,
+   "ms_per_step": 28.66,
+   "tokens_per_request_step": 3.101
+  },
+  {
+   "users": 4,
+   "tokens": 2800,
+   "wall_s": 7.21,
+   "aggregate_tok_s": 388.3,
+   "ms_per_step": 28.61,
+   "tokens_per_request_step": 3.091
+  },
+  {
+   "users": 8,
+   "tokens": 5600,
+   "wall_s": 9.519,
+   "aggregate_tok_s": 588.3,
+   "ms_per_step": 37.18,
+   "tokens_per_request_step": 3.097
+  },
+  {
+   "users": 8,
+   "tokens": 5600,
+   "wall_s": 9.667,
+   "aggregate_tok_s": 579.3,
+   "ms_per_step": 36.62,
+   "tokens_per_request_step": 3.091
+  },
+  {
+   "users": 16,
+   "tokens": 11200,
+   "wall_s": 13.486,
+   "aggregate_tok_s": 830.5,
+   "ms_per_step": 49.95,
+   "tokens_per_request_step": 3.063
+  },
+  {
+   "users": 16,
+   "tokens": 11200,
+   "wall_s": 13.205,
+   "aggregate_tok_s": 848.2,
+   "ms_per_step": 48.55,
+   "tokens_per_request_step": 3.046
+  },
+  {
+   "users": 24,
+   "tokens": 16800,
+   "wall_s": 15.955,
+   "aggregate_tok_s": 1053.0,
+   "ms_per_step": 61.13,
+   "tokens_per_request_step": 3.093
+  },
+  {
+   "users": 24,
+   "tokens": 16800,
+   "wall_s": 16.107,
+   "aggregate_tok_s": 1043.0,
+   "ms_per_step": 59.65,
+   "tokens_per_request_step": 3.062
+  },
+  {
+   "users": 32,
+   "tokens": 22400,
+   "wall_s": 19.173,
+   "aggregate_tok_s": 1168.3,
+   "ms_per_step": 71.81,
+   "tokens_per_request_step": 3.09
+  },
+  {
+   "users": 32,
+   "tokens": 22400,
+   "wall_s": 19.247,
+   "aggregate_tok_s": 1163.8,
+   "ms_per_step": 70.76,
+   "tokens_per_request_step": 3.095
+  },
+  {
+   "users": 48,
+   "tokens": 33600,
+   "wall_s": 24.043,
+   "aggregate_tok_s": 1397.5,
+   "ms_per_step": 89.38,
+   "tokens_per_request_step": 3.067
+  },
+  {
+   "users": 48,
+   "tokens": 33600,
+   "wall_s": 23.859,
+   "aggregate_tok_s": 1408.3,
+   "ms_per_step": 88.36,
+   "tokens_per_request_step": 3.069
+  }
+ ]
+}

@@ -1,0 +1,7 @@
+# recover-align: N=2 TOKENS~120000 RETURN=[0, 1]
+# pass 1: fill
+{"ctx": 0, "needle": 0, "prompt_tokens": 117445, "cached_tokens": null, "ttft_s": 26.97, "total_s": 27.34, "correct": true, "answer": "562141"}
+{"ctx": 1, "needle": 0, "prompt_tokens": 139364, "cached_tokens": null, "ttft_s": 32.17, "total_s": 32.52, "correct": true, "answer": "136622"}
+# pass 2: return
+{"ctx": 0, "needle": 1, "prompt_tokens": 117445, "cached_tokens": null, "ttft_s": 1.15, "total_s": 1.56, "correct": true, "answer": "107855"}
+{"ctx": 1, "needle": 1, "prompt_tokens": 139364, "cached_tokens": null, "ttft_s": 1.22, "total_s": 1.62, "correct": true, "answer": "826754"}

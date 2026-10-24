@@ -1,0 +1,7 @@
+# bf16ssm-bs864-d3: N=2 TOKENS~120000 RETURN=[0, 1]
+# pass 1: fill
+{"ctx": 0, "needle": 0, "prompt_tokens": 117445, "cached_tokens": null, "ttft_s": 26.58, "total_s": 26.93, "correct": true, "answer": "562141"}
+{"ctx": 1, "needle": 0, "prompt_tokens": 139364, "cached_tokens": null, "ttft_s": 31.72, "total_s": 32.08, "correct": true, "answer": "136622"}
+# pass 2: return
+{"ctx": 0, "needle": 1, "prompt_tokens": 117445, "cached_tokens": null, "ttft_s": 0.78, "total_s": 1.17, "correct": true, "answer": "107855"}
+{"ctx": 1, "needle": 1, "prompt_tokens": 139364, "cached_tokens": null, "ttft_s": 0.77, "total_s": 1.35, "correct": true, "answer": "826754"}

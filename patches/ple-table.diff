@@ -1,0 +1,145 @@
+--- a/vllm/models/qwen4_exp/common/ngram_embedding.py
++++ b/vllm/models/qwen4_exp/common/ngram_embedding.py
+@@ -8,6 +8,9 @@
+ Unified Virtual Addressing on any CUDA-alike platform.
+ """
+ 
++import fcntl
++import mmap
++import os
+ import threading
+ from abc import ABC, abstractmethod
+ from typing import ClassVar
+@@ -54,7 +57,7 @@
+ from vllm.utils.platform_utils import is_uva_available
+ from vllm.utils.torch_utils import get_accelerator_view_from_cpu_tensor
+ 
+-from .ple import PLEVocabParallelEmbedding
++from .ple import PLEVocabParallelEmbedding, compute_ple_shard_overlap
+ 
+ logger = init_logger(__name__)
+ 
+@@ -219,10 +222,9 @@
+             and quant_config.get_scheme_dict(None, layer_name=prefix) is None
+         ):
+             return Qwen4ExpPLEUnquantizedEmbeddingMethod()
+-        if (
+-            isinstance(quant_config, INCConfig)
+-            and not quant_config.config_parser.resolve(None, prefix).quantized
+-        ):
++        # INC (AutoRound) quantizes Linear and MoE weights only; the PLE table is an
++        # embedding and stays BF16 even when block_name_to_quantize covers its layer.
++        if isinstance(quant_config, INCConfig):
+             return Qwen4ExpPLEUnquantizedEmbeddingMethod()
+         # Quark quantizes only Linear and MoE layers; PLE tables stay BF16.
+         if isinstance(quant_config, QuarkConfig):
+@@ -625,10 +627,23 @@
+     )
+ 
+ 
++# Recipe change: one host copy of the table for several servers. With
++# VLLM_QWEN_PLE_SHARED_DIR (a host tmpfs directory mounted at the same path in every
++# container) and VLLM_QWEN_PLE_SHARED_NAME (names the table), the pinned table is a
++# shared mapping of <dir>/<key>.<layer>.<dim>.<dtype>.bin in global row order,
++# registered with CUDA instead of allocated; each ETP rank maps its own row range,
++# so one-card and two-card servers of the same table share it. Loading fills only
++# empty rows and compares filled ones byte for byte, under a file lock, so a server
++# with a different table stops at load instead of changing another server's rows.
++_PLE_SHARED_DIR = os.environ.get("VLLM_QWEN_PLE_SHARED_DIR", "")
++_PLE_SHARED_NAME = os.environ.get("VLLM_QWEN_PLE_SHARED_NAME", "")
++
++
+ class Qwen4ExpPLEPinnedHostEmbedding(Qwen4ExpPLEEmbedding):
+     """PLE table loaded into pinned CPU memory and looked up through UVA."""
+ 
+     supports_prefetch: ClassVar[bool] = True
++    _shared_path: str | None = None
+ 
+     def __init__(
+         self,
+@@ -673,6 +688,8 @@
+         dtype: torch.dtype,
+     ) -> torch.Tensor:
+         """Allocate the complete PLE weight directly in pinned CPU memory."""
++        if _PLE_SHARED_DIR and _PLE_SHARED_NAME:
++            return self._map_shared_weight(num_embeddings, embedding_dim, dtype)
+         return torch.empty(
+             num_embeddings,
+             embedding_dim,
+@@ -680,6 +697,76 @@
+             device="cpu",
+             pin_memory=True,
+         )
++
++    def _map_shared_weight(
++        self,
++        num_embeddings: int,
++        embedding_dim: int,
++        dtype: torch.dtype,
++    ) -> torch.Tensor:
++        start = self.shard_indices.org_vocab_start_index
++        if self.shard_indices.added_vocab_end_index != self.shard_indices.added_vocab_start_index:
++            raise ValueError("shared PLE table: added vocabulary is not supported")
++        itemsize = torch.empty(0, dtype=dtype).element_size()
++        row_bytes = embedding_dim * itemsize
++        layer = self.prefix.replace("/", "_") if getattr(self, "prefix", "") else "ple"
++        name = f"{_PLE_SHARED_NAME}.{layer}.{embedding_dim}.{str(dtype).split('.')[-1]}.bin"
++        path = os.path.join(_PLE_SHARED_DIR, name)
++        begin, end = start * row_bytes, (start + num_embeddings) * row_bytes
++        with open(path + ".lock", "a+") as lock:
++            fcntl.flock(lock, fcntl.LOCK_EX)
++            fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
++            try:
++                if os.fstat(fd).st_size < end:
++                    os.ftruncate(fd, end)
++                lead = begin % mmap.ALLOCATIONGRANULARITY
++                self._shared_mmap = mmap.mmap(fd, end - begin + lead, offset=begin - lead)
++            finally:
++                os.close(fd)
++        raw = torch.frombuffer(self._shared_mmap, dtype=torch.uint8)
++        rc = torch.cuda.cudart().cudaHostRegister(raw.data_ptr(), raw.numel(), 0)
++        if rc != torch.cuda.cudart().cudaError.success:
++            raise RuntimeError(f"shared PLE table: cudaHostRegister failed ({rc}) for {path}")
++        self._shared_path = path
++        logger.info("PLE table rows %d-%d mapped from shared %s (%.2f GiB, registered)",
++                    start, start + num_embeddings, path, (end - begin) / 2**30)
++        return raw[lead:].view(num_embeddings, row_bytes).view(dtype).view(
++            num_embeddings, embedding_dim)
++
++    def weight_loader(
++        self,
++        param: torch.Tensor,
++        loaded_weight: torch.Tensor,
++        checkpoint_start: int | None = None,
++    ) -> None:
++        weight = getattr(self, "weight", None)
++        if self._shared_path is None or weight is None or param.data_ptr() != weight.data_ptr():
++            super().weight_loader(param, loaded_weight, checkpoint_start)
++            return
++        overlap = compute_ple_shard_overlap(
++            checkpoint_start=0 if checkpoint_start is None else checkpoint_start,
++            checkpoint_rows=loaded_weight.shape[0],
++            tp_start=self.shard_indices.org_vocab_start_index,
++            tp_end=self.shard_indices.org_vocab_end_index,
++        )
++        if overlap is None:
++            return
++        source = loaded_weight.narrow(0, overlap.source_start, overlap.row_count).to(
++            device="cpu", dtype=param.dtype)
++        target = param.data.narrow(0, overlap.destination_start, overlap.row_count)
++        src_rows = source.contiguous().view(torch.uint8).view(overlap.row_count, -1)
++        dst_rows = target.view(torch.uint8).view(overlap.row_count, -1)
++        with open(self._shared_path + ".lock", "a+") as lock:
++            fcntl.flock(lock, fcntl.LOCK_EX)
++            empty = ~dst_rows.any(dim=1)
++            if bool(empty.all()):
++                dst_rows.copy_(src_rows)
++            elif bool(empty.any()):
++                dst_rows[empty] = src_rows[empty]
++            if not torch.equal(dst_rows, src_rows):
++                raise ValueError(
++                    f"shared PLE table {self._shared_path} holds different rows than this "
++                    "checkpoint; use another VLLM_QWEN_PLE_SHARED_NAME")
+ 
+     def _lookup(
+         self,

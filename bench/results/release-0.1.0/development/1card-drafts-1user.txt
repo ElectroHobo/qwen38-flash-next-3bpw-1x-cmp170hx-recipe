@@ -1,0 +1,28 @@
+== d3 Padding mamba page size by 4.35%
+  1 user(s) structured   177.9 tok/s
+  1 user(s) code         216.9 tok/s
+  1 user(s) prose        156.2 tok/s
+| Streaming decode, 1 user, structured / code / prose | 177.9 / 216.9 / 156.2 tok/s |
+  1 user(s) structured   192.6 tok/s
+  1 user(s) code         218.0 tok/s
+  1 user(s) prose        149.4 tok/s
+| Streaming decode, 1 user, structured / code / prose | 192.6 / 218.0 / 149.4 tok/s |
+== d543 Padding mamba page size by 7.55%
+  1 user(s) structured   192.9 tok/s
+  1 user(s) code         265.7 tok/s
+  1 user(s) prose        162.9 tok/s
+| Streaming decode, 1 user, structured / code / prose | 192.9 / 265.7 / 162.9 tok/s |
+  1 user(s) structured   187.6 tok/s
+  1 user(s) code         258.3 tok/s
+  1 user(s) prose        150.5 tok/s
+| Streaming decode, 1 user, structured / code / prose | 187.6 / 258.3 / 150.5 tok/s |
+== d753 Padding mamba page size by 5.07%
+  1 user(s) structured   223.6 tok/s
+  1 user(s) code         276.9 tok/s
+  1 user(s) prose        141.3 tok/s
+| Streaming decode, 1 user, structured / code / prose | 223.6 / 276.9 / 141.3 tok/s |
+  1 user(s) structured   229.2 tok/s
+  1 user(s) code         273.8 tok/s
+  1 user(s) prose        142.3 tok/s
+| Streaming decode, 1 user, structured / code / prose | 229.2 / 273.8 / 142.3 tok/s |
+done 16:45:52

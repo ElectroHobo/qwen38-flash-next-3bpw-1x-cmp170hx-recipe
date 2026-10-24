@@ -1,0 +1,71 @@
+== download: build_checkpoint: /models/Qwen3.8-Flash-Next-3bpw-fp8ple: 227703 tensors in 22 files, 129 table tensors from FP8; 40 linked qwen38 · download: done 
+== shm after test cleanup: 22:08:51 avail 102 shmem 79
+== start 22:08:52
+== start: the start.sh wait was killed at 22:20:35 to wait past its 30-minute default; container left loading
+healthy at 22:56:40 (container started 22:09)
+[boot-check] enabled: two temperature-0 requests
+[boot-check] PASS: OK; drafts=101 proposed=707 accepted=666
+:1061] GPU KV cache size: 292,784 tokens, Maximum concurrency for 262,144 tokens per request: 1.12x
+== cmp 22:56:44
+  prefill  38256 tokens  TTFT   9.01 s     4248 tok/s
+
+| | |
+|---|---:|
+| Streaming decode, 1 user, structured / code / prose | 197.8 / 296.4 / 135.5 tok/s |
+| Decode, 2 users, aggregate, structured / code / prose | 307.5 / 403.9 / 218.2 tok/s |
+| Decode, 4 users, aggregate, structured / code / prose | 515.6 / 587.1 / 370.9 tok/s |
+| Decode, 8 users, aggregate, structured / code / prose | 799.5 / 791.3 / 586.4 tok/s |
+| Cold prefill | 4,243 tok/s |
+| Cold prefill prompts (tokens) | 23,828, 34,008, 38,256 |
+== steps 23:00:07
+== agent 23:00:58
+[1x-0.1.0-fresh-dflash] edit: prompt ~2,222 tokens of code; decode median 371.0 tok/s
+[1x-0.1.0-fresh-dflash] followup: turn 2 TTFT median 0.42 s (turn 1 4.13 s)
+== sweep 23:01:33
+
+| users | aggregate tok/s | ms / step | tokens / request-step |
+|---:|---:|---:|---:|
+| 1 | 206.4 | 20.1 | 4.18 |
+| 4 | 412.3 | 28.9 | 3.62 |
+| 8 | 618.3 | 34.0 | 3.12 |
+| 16 | 868.7 | 47.2 | 3.07 |
+| 24 | 1038.7 | 59.7 | 3.06 |
+| 32 | 1156.8 | 71.1 | 3.07 |
+| 48 | 1384.2 | 89.1 | 3.07 |
+== quality 23:06:08
+1x-0.1.0-fresh-dflash humaneval: 161/164 passed
+1x-0.1.0-fresh-dflash gsm8k: 195/200 passed
+== mtp-restart 23:11:41
+restart exit 0
+qwen38 · healthy after 2720s
+[boot-check] enabled: two temperature-0 requests
+[boot-check] PASS: OK; drafts=198 proposed=594 accepted=569
+qwen38 ·   GPU KV cache size: 304,893 tokens, Maximum concurrency for 262,144 tokens per request: 1.16x
+== cmp-mtp 23:57:23
+  prefill  38260 tokens  TTFT   9.09 s     4211 tok/s
+
+| | |
+|---|---:|
+| Streaming decode, 1 user, structured / code / prose | 176.7 / 193.4 / 139.0 tok/s |
+| Decode, 2 users, aggregate, structured / code / prose | 269.0 / 298.8 / 222.9 tok/s |
+| Decode, 4 users, aggregate, structured / code / prose | 492.1 / 476.0 / 364.2 tok/s |
+| Decode, 8 users, aggregate, structured / code / prose | 764.0 / 724.3 / 542.6 tok/s |
+| Cold prefill | 4,230 tok/s |
+| Cold prefill prompts (tokens) | 23,831, 34,009, 38,260 |
+== steps-mtp 00:00:56
+== agent-mtp 00:01:54
+[1x-0.1.0-fresh-mtp] edit: prompt ~2,222 tokens of code; decode median 215.2 tok/s
+[1x-0.1.0-fresh-mtp] followup: turn 2 TTFT median 0.24 s (turn 1 4.18 s)
+== sweep-mtp 00:02:41
+
+| users | aggregate tok/s | ms / step | tokens / request-step |
+|---:|---:|---:|---:|
+| 1 | 166.2 | 18.4 | 3.08 |
+| 4 | 390.4 | 28.6 | 3.10 |
+| 8 | 583.8 | 36.9 | 3.09 |
+| 16 | 839.4 | 49.2 | 3.05 |
+| 24 | 1048.0 | 60.4 | 3.08 |
+| 32 | 1166.0 | 71.3 | 3.09 |
+| 48 | 1402.9 | 88.9 | 3.07 |
+== quality-mtp 00:07:22
+== stopped by hand at 00:07:46 before quality-mtp finished and before the shared-table step (owner: shut down)

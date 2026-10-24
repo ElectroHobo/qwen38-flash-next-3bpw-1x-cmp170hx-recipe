@@ -1,0 +1,6 @@
+| Streaming decode, 1 user, structured / code / prose | 170.3 / 195.7 / 136.9 tok/s |
+| Streaming decode, 1 user, structured / code / prose | 175.4 / 193.1 / 141.5 tok/s |
+  File "/usr/lib/python3.13/socket.py", line 719, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+ConnectionResetError: [Errno 104] Connection reset by peer

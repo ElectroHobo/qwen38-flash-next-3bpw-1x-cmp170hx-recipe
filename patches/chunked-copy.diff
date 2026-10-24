@@ -1,0 +1,21 @@
+--- a/vllm/v1/worker/utils.py
++++ b/vllm/v1/worker/utils.py
+@@ -952,7 +952,17 @@
+             # Fold virtual block splitting into the shape so that dim 0 counts
+             # scheduler blocks; unflatten of dim 0 is always a view.
+             blocks = cache.unflatten(0, (num_blocks, kernel_blocks_per_block))
+-        blocks[dst] = blocks[src]
++        # Recipe change: copy in chunks so the gather's temporary stays small. A burst of
++        # partial prefix-cache hits gathered 4 GiB in one go on a one-card build
++        # and ran the card out of memory. Overlapping sources and destinations
++        # (never seen for copy-on-write) keep the single copy.
++        row_bytes = blocks[0].numel() * blocks.element_size()
++        step = max(1, (256 << 20) // max(1, row_bytes))
++        if src.numel() <= step or bool(torch.isin(dst, src).any()):
++            blocks[dst] = blocks[src]
++        else:
++            for i in range(0, src.numel(), step):
++                blocks[dst[i:i + step]] = blocks[src[i:i + step]]
+ 
+ 
+ def is_uniform_query_len(num_reqs: int, num_tokens: int, max_query_len: int) -> bool:

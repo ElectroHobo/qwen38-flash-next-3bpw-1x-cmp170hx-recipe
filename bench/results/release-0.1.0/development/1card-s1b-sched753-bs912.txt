@@ -1,0 +1,23 @@
+14:24:15 1card-s1b-sched753-bs912 on :18442 (qwen38-3bpw-1card)
+c       有效轮    聚合tok/s      ms/步     tok/步       接受率
+--------------------------------------------------------
+1         2      150.9     19.09     2.964     28.1%
+4         2      294.5     28.94     2.700     32.6%
+8         2      447.0     37.08     2.619     49.7%
+16        2      600.5     55.77     2.671     53.4%
+24        2      716.6     67.97     2.612     52.2%
+32        2      804.8     83.75     2.640     53.7%
+48        2      979.5    100.37     2.624     53.4%
+  4 user(s) code         611.3 tok/s
+  4 user(s) prose        367.9 tok/s
+  8 user(s) structured   796.3 tok/s
+  8 user(s) code         795.2 tok/s
+  8 user(s) prose        587.0 tok/s
+
+| | |
+|---|---:|
+| Streaming decode, 1 user, structured / code / prose | 235.1 / 260.5 / 139.3 tok/s |
+| Decode, 2 users, aggregate, structured / code / prose | 310.9 / 409.3 / 221.2 tok/s |
+| Decode, 4 users, aggregate, structured / code / prose | 519.5 / 611.3 / 367.9 tok/s |
+| Decode, 8 users, aggregate, structured / code / prose | 796.3 / 795.2 / 587.0 tok/s |
+14:32:38 done
