@@ -182,7 +182,7 @@ aggregate of three runs). Raw files:
 | **KV pool** (tokens) | 292,784 | 304,893 |
 | Code editing, one user (`bench/agent_probes.py edit`) | **371** | 215 |
 | Follow-up turn, time to first token | 0.42 | 0.24 |
-| Quality: HumanEval / GSM8K (first 200), thinking on | 161/164, 195/200 | 163/164, 195/200 |
+| Quality: HumanEval / GSM8K (first 200), thinking on | 161/164, 195/200 | 163/164, 195/200 (from the SSD copy, [results](docs/results.md)) |
 
 Morrowmake publishes no one-card Qwen3.8-Flash-Next recipe to compare with. On
 the same host the two-card recipe does 241 / 350 / 198 for one user and 1,937 at

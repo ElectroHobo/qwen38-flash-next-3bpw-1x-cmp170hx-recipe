@@ -11,7 +11,7 @@ served real traffic for days yet.
 ## Known limits
 
 - **Quality is scored on two checkable suites only.** HumanEval / GSM8K (first
-  200 problems) 161/164, 195/200 with the DFlash 2 default and 163/164, 195/200 with MTP, thinking on
+  200 problems) 161/164, 195/200 with the DFlash 2 default and 163/164, 195/200 with MTP (that one on the SSD copy of this build), thinking on
   ([results.md](results.md)). Nothing here measures long-form writing,
   tool-call adherence or hard competition code.
 - **2- and 3-bit experts.** Half the layers' routed experts are 2-bit (layers

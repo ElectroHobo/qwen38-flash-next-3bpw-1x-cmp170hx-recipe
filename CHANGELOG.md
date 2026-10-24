@@ -30,6 +30,7 @@ by digest with the files in `patches/` mounted over it.
 - Chunked copy-on-write, which fixes a CUDA out-of-memory under prefix-cache
   bursts in MTP mode.
 - Quality, thinking on: HumanEval / GSM8K (first 200) 161/164, 195/200 with DFlash 2,
-  163/164, 195/200 with MTP.
+  163/164, 195/200 with MTP (run on the development copy of this build with
+  the checkpoint on an SSD; docs/results.md says why that is the same build).
 - Raw files of the release runs and the development runs in
   `bench/results/release-0.1.0/`.
