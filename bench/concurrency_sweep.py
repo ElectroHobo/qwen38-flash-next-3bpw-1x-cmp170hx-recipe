@@ -3,8 +3,9 @@
 
 N requests at once, each pinned to --tokens tokens (min_tokens + ignore_eos), temperature 0,
 thinking off, a salt per request so the prefix cache stays out of it; the request prompts
-rotate through the structured, code and prose tasks of cmp_recipe_bench.py so each round is a
-mix. One warm-up round, then --rounds rounds per user count; the table reports the median.
+rotate through the structured, code and prose tasks of vllm_conc_steps.py so each round is a
+mix. One warm-up round, then --rounds rounds per user count; the table reports the median. A
+failed request stops the sweep rather than counting as 0 tokens.
 Aggregate = completion tokens / the round's wall time (prefill and client included); ms per
 step and tokens per request-step come from vllm:iteration_tokens_total_count and the
 spec-decode counters, as in vllm_conc_steps.py.
@@ -71,7 +72,7 @@ def request(base: str, model: str, prompt: str, tokens: int, out: list, i: int) 
 
 def round_(base: str, model: str, users: int, tokens: int) -> dict:
     before = metrics(base)
-    done = [0] * users
+    done: list[int | None] = [None] * users
     threads = [threading.Thread(target=request,
                                 args=(base, model, PROMPTS[i % len(PROMPTS)], tokens, done, i))
                for i in range(users)]
@@ -81,6 +82,8 @@ def round_(base: str, model: str, users: int, tokens: int) -> dict:
     for t in threads:
         t.join()
     wall = time.perf_counter() - t0
+    if None in done:
+        raise SystemExit(f"{done.count(None)} of {users} requests failed; see the tracebacks above")
     after = metrics(base)
     d = {k: after[k] - before[k] for k in COUNTERS}
     steps = max(d["iteration_tokens_total_count"], 1)
@@ -122,7 +125,7 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / f"concurrency-{a.tag}.json").write_text(json.dumps(
         {"tag": a.tag, "model": a.model, "tokens": a.tokens, "rounds": runs}, indent=1))
-    print(f"\n| users | aggregate tok/s | ms / step | tokens / request-step |\n|---:|---:|---:|---:|")
+    print("\n| users | aggregate tok/s | ms / step | tokens / request-step |\n|---:|---:|---:|---:|")
     for n, row in rows:
         print(f"| {n} | {row.get('aggregate_tok_s', 0):.1f} | {row.get('ms_per_step', 0):.1f} | "
               f"{row.get('tokens_per_request_step', 0) or 0:.2f} |")
