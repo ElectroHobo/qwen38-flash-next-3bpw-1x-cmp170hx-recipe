@@ -73,7 +73,9 @@ Fewer requests at once (`MAX_SEQS`) keep each one faster.
 ## Several servers, one table
 
 The n-gram table is 48 GiB of host memory that every server pins for itself
-(64 GiB as the engine allocates it). Servers on one host can share one copy:
+(64 GiB as the engine allocates it). Servers on one host can share one copy;
+each server still needs a card of its own (a server fills its card) and host RAM for its
+engine:
 
 ```
 PLE_SHARED_DIR=/dev/shm/qwen38-ple   # in .env of every server that shares

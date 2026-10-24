@@ -93,8 +93,9 @@ DFlash 2 leads up to 16 users; from 24 the two are level on this sweep, MTP 1 %
 ahead. The sweep's three fixed tasks at temperature 0 suit DFlash 2; on a mixed
 load in development (different prompts and lengths per request) MTP was 3 to 15 %
 ahead from 16 users (48 users: 1,128 against 980). One server cannot switch
-drafters by load; with the shared n-gram table a second server costs only its own
-engine
+drafters by load. To have both, run a second server with the other drafter: it
+needs its own card and some host RAM for its engine, but with the shared n-gram
+table not a second copy of the 48 GiB table
 ([docs/how-to-use.md](docs/how-to-use.md), "Several servers, one table").
 
 ## One-time host setup
