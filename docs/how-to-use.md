@@ -117,7 +117,7 @@ the same folder share the file, as in RAM, the two-card recipe's included.
 - **What it costs** (fresh clones, [results](results.md#release-020)): with the
   whole table cached, 4 % at eight users on structured and code, 10 % on prose, 5 %
   at 48 users, and prompt reading about 20 % slower; with the whole container
-  capped at 14 GiB, 3–4 % more on structured and code and 13 % on prose, on our
+  capped at 14 GiB, 1–4 % more on structured and code and 13 % on prose, on our
   prompts. Varied traffic uses more of the table than a benchmark does, so give it
   more than the floor.
 - **The first minutes after a start are a little slower:** the card faults once on

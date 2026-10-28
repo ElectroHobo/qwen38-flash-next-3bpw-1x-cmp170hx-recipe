@@ -129,7 +129,7 @@ table not a second copy of the 48 GiB table
   the engine allocates it; the engine and the host need the rest). **Much less
   with the table on disk** (`PLE_SHARED_DIR` on a disk filesystem, 0.2.0): the
   server holds about 6 GiB and the page cache keeps the rows in use; capped at
-  14 GiB in all it ran within 3–4 % of uncapped on structured and code and 13 % on
+  14 GiB in all it ran within 1–4 % of uncapped on structured and code and 13 % on
   prose, on our prompts ([results](docs/results.md#how-much-ram-the-table-on-disk-needs)).
   Measured on 204 GiB (0.1.0) and 352 GB (0.2.0).
 - Linux with NVIDIA driver **580 or newer** (measured on 610.57.04); for the
