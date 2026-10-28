@@ -17,7 +17,7 @@ The same change as the two-card recipe's 0.3.0.
 - From fresh clones, table on disk against RAM: one user 226.7 / 277.7 / 131.2
   against 200.0 / 295.0 / 146.2 tok/s, eight users 752.5 / 763.2 / 538.1 against
   785.5 / 792.1 / 598.7, 1,316 tok/s at 48 users (1,328 with MTP), cold prefill
-  3,376 tok/s (4,243 in 0.1.0). With the whole container capped at 14 GiB: eight
+  3,376 tok/s (4,255 from RAM). With the whole container capped at 14 GiB: eight
   users 723.7 / 758.9 / 468.1. HumanEval / GSM8K
   with the table on disk 161/164, 196/200 (0.1.0 in RAM: 161/164, 195/200).
 - `.env.advanced.example`: `PLE_PLACEMENT` is the EXL3 reader's switch and does

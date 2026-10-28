@@ -255,3 +255,13 @@ saved 5 replies from :18442 to /root/v030-same-1x-disk.json
   1x disk: disk-1x-dflash humaneval: 161/164 passed
   1x disk: disk-1x-dflash gsm8k: 196/200 passed
 == done (c) 01:15:44
+== 7. RAM (default) on today's box: cold prefill and the top sweep point 01:41:46
+  qwen38-2x-030 start exit 0 01:49:01
+  qwen38-1x-020 start exit 0 01:49:19
+  030-2x-ram: | Cold prefill | 4,723 tok/s |
+  030-2x-ram: | Cold prefill prompts (tokens) | 23,828, 34,010, 38,260 |
+  020-1x-ram: | Cold prefill | 4,255 tok/s |
+  020-1x-ram: | Cold prefill prompts (tokens) | 23,826, 34,008, 38,259 |
+  030-2x-ram: | 128 | 1933.8 | 146.6 | 2.50 |
+  020-1x-ram: | 48 | 1385.8 | 89.3 | 3.07 |
+== done (d) 01:55:26

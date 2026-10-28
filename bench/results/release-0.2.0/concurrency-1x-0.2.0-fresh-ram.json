@@ -1,0 +1,23 @@
+{
+ "tag": "020-1x-ram",
+ "model": "qwen3.8-flash-next",
+ "tokens": 700,
+ "rounds": [
+  {
+   "users": 48,
+   "tokens": 33600,
+   "wall_s": 24.001,
+   "aggregate_tok_s": 1400.0,
+   "ms_per_step": 87.91,
+   "tokens_per_request_step": 3.062
+  },
+  {
+   "users": 48,
+   "tokens": 33600,
+   "wall_s": 24.495,
+   "aggregate_tok_s": 1371.7,
+   "ms_per_step": 90.72,
+   "tokens_per_request_step": 3.087
+  }
+ ]
+}
