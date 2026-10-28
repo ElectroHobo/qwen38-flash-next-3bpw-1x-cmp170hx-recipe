@@ -87,10 +87,12 @@ both.
   and 8-bit). That is what lets a 125B MoE fit one 64 GiB card.
 - **The n-gram (PLE) table** is not klee100's 95 GiB BF16 one but halt95's FP8 one
   (RadixArk's quantisation, one global scale), the same model's table in 48 GiB of
-  host RAM. `start.sh` builds the served checkpoint from the two downloads with hard
+  host RAM, or since 0.2.0 in a 48 GiB file on disk for hosts with less RAM
+  ([The table on disk](docs/how-to-use.md#the-table-on-disk)). `start.sh` builds the served checkpoint from the two downloads with hard
   links (`docker/build_checkpoint.py`): no extra disk.
-- **The step** is the two-card recipe's: the table in host RAM, so the engine
-  captures the whole decode step as one CUDA graph, which is what makes it fast on
+- **The step** is the two-card recipe's: the card reads the table itself, from
+  host RAM or through HMM from the file on disk, so the engine captures the whole
+  decode step as one CUDA graph, which is what makes it fast on
   an old CPU (measured on a 2016 Broadwell host; the two-card recipe's README says
   why).
 - **The drafter** is [inco.ai's DFlash 2](https://huggingface.co/incoai/Qwen3.8-Flash-Next-DFlash2):
@@ -141,7 +143,9 @@ table not a second copy of the 48 GiB table
   and `jq` for the smoke test.
 - About 100 GiB of free disk for the downloads (~97 GiB), **on one filesystem**
   (the served checkpoint is hard links to them), plus the engine image and the
-  kernel compile caches. The disk only matters while loading.
+  kernel compile caches. The disk only matters while loading, unless the n-gram
+  table is on it too: that file is read while decoding, so give it an SSD (48 GiB
+  more).
 
 ## Hardware
 
@@ -161,7 +165,7 @@ table not a second copy of the 48 GiB table
 | Engine | [Morrowmake/vllm-cmp170hx](https://github.com/Morrowmake/vllm-cmp170hx/tree/18305948acba3f4c4d912cdd56f2202d2ebd94e8) at `18305948acba3f4c4d912cdd56f2202d2ebd94e8` |
 | Image | `ghcr.io/morrowmake/vllm-cmp170hx@sha256:5b45c4d6feafefe2eba962375b0a9a0b64fd22b9e05abb4d1966f14a32a2db79`, Morrowmake's release image for their Qwen EXL3 recipe, used as released apart from the mounted files. The first start compiles kernels and RecoverSSM's verify (about 12 minutes); later starts reuse that, and most of their time is reading the checkpoint (about 4 minutes from an SSD, 31 minutes from a USB disk) |
 | Checkpoint | `klee100/Qwen3.8-Flash-Next-AutoRound-3bpw-MTP`, revision `ce0e0b94083895bd836b916f29bf105c40a8162a`, without `model-00001-of-00011.safetensors` (its BF16 n-gram table); the FP8 table shards (`model-plefp8-*`) of `halt95/Qwen3.8-Flash-Next-W4A16-Merlin`, revision `cec53e9f90e5995b81691604ec0b32191debf797` |
-| Precision | routed experts 3-bit g128 / 2-bit g64 by layer (Intel AutoRound, SignRoundV2), QSA and GDN projections 8-bit, routers / shared experts / embeddings / lm_head / vision BF16, MTP head 4- and 8-bit, n-gram table FP8 in host RAM, **KV cache BF16**, indexer cache BF16, **GDN recurrent states BF16** |
+| Precision | routed experts 3-bit g128 / 2-bit g64 by layer (Intel AutoRound, SignRoundV2), QSA and GDN projections 8-bit, routers / shared experts / embeddings / lm_head / vision BF16, MTP head 4- and 8-bit, n-gram table FP8 in host RAM or in a file on disk, **KV cache BF16**, indexer cache BF16, **GDN recurrent states BF16** |
 | Drafter | [incoai/Qwen3.8-Flash-Next-DFlash2](https://huggingface.co/incoai/Qwen3.8-Flash-Next-DFlash2), revision `a22a1744e85c17364dcc54a6a420af7135d4c7f6` (Apache-2.0, 1.1 GiB): 7 drafts for one or two requests, 5 for three or four, 3 beyond. Alternative: the checkpoint's MTP head (`SPEC_MODE=mtp`), 3 drafts |
 | Engine patches | files in [`patches/`](patches/), mounted read-only over the image's: AutoRound expert bits and the MTP layer for this engine's loader, the AutoRound n-gram table, the DFlash 2 capture hook and speculation-method check (dflash mode), RecoverSSM for the GDN layers, the shared n-gram table loader and chunked copy-on-write |
 | Requests | up to 48 at once (`MAX_SEQS`) |

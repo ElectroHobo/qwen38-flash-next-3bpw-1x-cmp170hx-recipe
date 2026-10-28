@@ -11,7 +11,8 @@
 - Docker with the NVIDIA Container Toolkit, usable by your user.
 - About 100 GiB of free disk for the downloads (~97 GiB) and the engine's compile
   caches, on **one filesystem** (the served checkpoint is hard links to the
-  downloads). Any disk: it is read once per start, not during decoding; a slow
+  downloads). Any disk: it is read once per start, not during decoding (the n-gram table on disk is,
+  so that file wants an SSD); a slow
   one (a USB drive) makes the first start long, see `READY_TIMEOUT` below.
 - `git`, `curl`, `flock`, `setsid`, Python 3, `jq`.
 
