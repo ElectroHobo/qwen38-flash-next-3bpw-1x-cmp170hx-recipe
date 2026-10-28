@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.1 — 2026-10-28
+
+Starts faster: compiled Python is kept in `cache/pycache`. The engine image ships no
+compiled Python, and the server ran with `PYTHONDONTWRITEBYTECODE=1`, so every one of its
+processes (the API server, the engine, one per card) compiled vLLM and torch from source at
+every start: importing them took 22–23 s that way and 11–12 s from the cache.
+`PYTHONPYCACHEPREFIX=/cache/pycache` (`start.sh`, `docker/container.env`) instead; nothing is
+written into the engine's own folders, and the first start fills the cache (~170 MB). Nothing
+else changes.
+
+Start to `/health`, one start before and one after (the cache already filled), the model's
+files read into the page cache first (DeepSeek's do not fit, so it read from disk both times),
+2026-10-28 (`bench/results/release-0.2.1/start-time-ab.txt`):
+
+| Recipe on this box | before | after |
+|---|---:|---:|
+| this one | 360 s | 300 s |
+| the two-card recipe | 414 s | 304 s |
+| GLM-5.3-Flash, MiMo-V2.6-Flash, DeepSeek-V4.1-Flash, Qwen EXL3 (Morrowmake's) | 349 / 410 / 585 / 401 s | 272 / 302 / 545 / 316 s |
+
+Every start passed the startup check.
+
 ## 0.2.0 — 2026-10-28
 
 The n-gram table on disk, for hosts with less RAM. Same engine image, checkpoints

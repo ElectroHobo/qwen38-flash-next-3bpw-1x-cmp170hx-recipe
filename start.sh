@@ -559,7 +559,9 @@ container_env() {
     # FlashInfer, TileLang, torch, vLLM, Hugging Face) goes under the mounted
     # cache directory, owned by you. USER and LOGNAME give Python a user name
     # for a uid the image does not know.
-    echo "PYTHONDONTWRITEBYTECODE=1"
+    # Compiled Python goes to cache/pycache: the image ships none, and compiling vLLM
+    # and torch from source cost each of the server's processes ~11 s at every start.
+    echo "PYTHONPYCACHEPREFIX=/cache/pycache"
     echo "RECIPE_CACHE_ROOT=/cache"
     echo "TMPDIR=/cache/tmp"
     echo "HOME=/cache"

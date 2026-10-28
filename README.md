@@ -1,7 +1,7 @@
 # Qwen3.8-Flash-Next 3 bpw on 1× CMP 170HX
 
 [![engine](https://img.shields.io/badge/engine-vllm--cmp170hx%2018305948ac-blue)](https://github.com/Morrowmake/vllm-cmp170hx/tree/18305948acba3f4c4d912cdd56f2202d2ebd94e8)
-![release](https://img.shields.io/badge/release-0.2.0-2ea44f)
+![release](https://img.shields.io/badge/release-0.2.1-2ea44f)
 
 **Qwen3.8-Flash-Next (125B MoE) on one CMP 170HX card with the full
 262,144-token context: 197.8 / 296.4 / 135.5 tok/s for one user (structured /
@@ -190,7 +190,7 @@ mounted at `/drafter`, the files from `patches/` over their engine paths
 ([`patches/README.md`](patches/README.md)). Environment: `VLLM_GDN_RECOVER=1`
 (RecoverSSM), `VLLM_USE_BREAKABLE_CUDAGRAPH=1`, `VLLM_QWEN4_QSA_TOPK_CANONICAL=1`,
 `VLLM_THIN_GEMM=1`, `VLLM_THIN_GEMM_GLUON=1`, `VLLM_FLA_AUTOTUNE_SKIP_SPILLING=1`,
-`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:False`, peer access off
+`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:False`, `PYTHONPYCACHEPREFIX=/cache/pycache`, peer access off
 (`NCCL_P2P_DISABLE=1`), `CUDA_DEVICE_ORDER=PCI_BUS_ID`; with `PLE_SHARED_DIR` also
 `VLLM_QWEN_PLE_SHARED_DIR`, `VLLM_QWEN_PLE_SHARED_NAME` and
 `VLLM_QWEN_PLE_SHARED_PIN` (`1` on tmpfs, `0` on disk).

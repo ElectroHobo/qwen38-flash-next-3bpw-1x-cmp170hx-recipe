@@ -4,7 +4,7 @@ title: "Qwen3.8-Flash-Next 3 bpw on 1x CMP 170HX: a community recipe for Morrowm
 type: software
 authors:
   - name: ElectroHobo
-version: 0.2.0
+version: 0.2.1
 date-released: 2026-10-28
 license: MIT
 repository-code: "https://github.com/ElectroHobo/qwen38-flash-next-3bpw-1x-cmp170hx-recipe"

@@ -1,0 +1,31 @@
+pyc A/B 2026-10-28 — GLM measured earlier: 349 s before (with the pre-read), 287 s fill, 272 s after
+== Qwen 2x 0.3.0 (ours) 14:46:07
+  before: 414 s
+  fill:   315 s
+  after:  304 s
+  [boot-check] PASS: OK; drafts=102 proposed=714 accepted=666
+== Qwen 1x 0.2.0 (ours) 15:04:53
+  before: 360 s
+  fill:   334 s
+  after:  300 s
+  [boot-check] PASS: OK; drafts=101 proposed=707 accepted=666
+== Qwen 27B (ours, private) 15:23:02
+  before: 130 s
+  fill:   113 s
+  after:  110 s
+== Qwen EXL3 (Morrowmake) 15:29:41
+  before: 401 s
+  fill:   318 s
+  after:  316 s
+  [boot-check] PASS: OK; drafts=385 proposed=385 accepted=383
+== MiMo V2.6 (Morrowmake, dev copy) 15:48:46
+  before: 410 s
+  fill:   324 s
+  after:  302 s
+  [boot-check] PASS: OK; drafts=98 proposed=686 accepted=673
+== DeepSeek V4.1 (Morrowmake) 16:07:06
+  before: 585 s
+  fill:   545 s
+  after:  545 s
+  [boot-check] PASS: OK; drafts=127 proposed=777 accepted=644
+== done 16:35:42; GLM back
