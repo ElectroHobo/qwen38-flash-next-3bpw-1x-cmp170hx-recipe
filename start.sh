@@ -375,11 +375,15 @@ preflight_ple() {
             die "PLE_SHARED_DIR=$PLE_SHARED_DIR is on $fs, not tmpfs, so the n-gram table would be a file on disk that the cards read through HMM, but nvidia-smi -q does not report 'Addressing Mode: HMM' for every card (HMM needs NVIDIA's open kernel modules). Use a tmpfs directory such as /dev/shm/qwen38-ple, or leave PLE_SHARED_DIR empty."
         fi
     fi
-    if ! ls "$PLE_SHARED_DIR/$PLE_SHARED_NAME".*.bin >/dev/null 2>&1; then
-        free_gb="$(df -BG --output=avail "$dir" 2>/dev/null | tail -1 | tr -dc '0-9' || true)"
-        if [ -n "${free_gb:-}" ] && [ "$free_gb" -lt 48 ]; then
-            die "PLE_SHARED_DIR=$PLE_SHARED_DIR has ${free_gb} GiB free; the n-gram table file needs 48 GiB"
-        fi
+    # The file is created sparse and filled at load, so an interrupted first start can
+    # leave it full size with few blocks written: count what is still to be written.
+    local have_gb=0
+    if ls "$PLE_SHARED_DIR/$PLE_SHARED_NAME".*.bin >/dev/null 2>&1; then
+        have_gb="$(du -cBG "$PLE_SHARED_DIR/$PLE_SHARED_NAME".*.bin 2>/dev/null | tail -1 | tr -dc '0-9' || echo 0)"
+    fi
+    free_gb="$(df -BG --output=avail "$dir" 2>/dev/null | tail -1 | tr -dc '0-9' || true)"
+    if [ -n "${free_gb:-}" ] && [ "$((free_gb + have_gb))" -lt 48 ]; then
+        die "PLE_SHARED_DIR=$PLE_SHARED_DIR has ${free_gb} GiB free and ${have_gb} GiB of the table written; the n-gram table file needs 48 GiB"
     fi
     log "  n-gram table: a file on disk, read through HMM ($PLE_SHARED_DIR, $fs)"
 }

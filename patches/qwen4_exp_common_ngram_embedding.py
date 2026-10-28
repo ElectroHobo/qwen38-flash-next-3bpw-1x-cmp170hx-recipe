@@ -516,6 +516,10 @@ class Qwen4ExpPLENvFp4EmbeddingMethod(Qwen4ExpPLEEmbeddingMethod):
         ids: torch.Tensor,
         output: torch.Tensor,
     ) -> None:
+        if layer._hmm_addr is not None:
+            raise NotImplementedError(
+                "NVFP4 n-gram tables cannot be read from disk (VLLM_QWEN_PLE_SHARED_PIN=0); "
+                "use a tmpfs PLE_SHARED_DIR")
         _lookup_nvfp4_ple_embedding_kernel[(ids.numel(),)](
             layer._uva_weight,
             self._uva_weight_scale.view(torch.uint8),

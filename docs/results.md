@@ -5,9 +5,10 @@ Every number here was measured on the same box: one CMP 170HX (74 SMs, 64 GiB,
 of RAM (352 GB at 1600 MT/s for 0.2.0), driver 610.57.04, Morrowmake's engine at
 `18305948acba3f4c4d912cdd56f2202d2ebd94e8`. The two-card recipe served on two
 other cards of the same host for most of it. Raw files are in
+[`bench/results/release-0.2.0/`](../bench/results/release-0.2.0/) and
 [`bench/results/release-0.1.0/`](../bench/results/release-0.1.0/), the
-development runs in its `development/` folder; the harnesses are in
-[`bench/`](../bench/). Dates are 2026-10-19 to 2026-10-23.
+development runs in their `development/` folders; the harnesses are in
+[`bench/`](../bench/). Dates are 2026-10-19 to 2026-10-27.
 
 ## Release 0.2.0
 

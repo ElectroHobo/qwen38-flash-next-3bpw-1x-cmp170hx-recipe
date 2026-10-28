@@ -271,8 +271,17 @@ if [ "$RECOVER_SSM" = 1 ]; then export VLLM_GDN_RECOVER=1; else unset VLLM_GDN_R
 if [ -n "${PLE_SHARED_DIR:-}" ]; then
   export VLLM_QWEN_PLE_SHARED_DIR=$PLE_SHARED_DIR
   export VLLM_QWEN_PLE_SHARED_NAME=${PLE_SHARED_NAME:-qwen38-flash-next-ple-fp8}
-  PLE_FS=$(stat -f -c %T "$PLE_SHARED_DIR")
-  if [ "$PLE_FS" = tmpfs ]; then
+  # DRY=1 runs this on the host, where start.sh has not created the folder yet:
+  # its nearest existing parent has the same filesystem.
+  PLE_FS_DIR=$PLE_SHARED_DIR
+  while [ ! -e "$PLE_FS_DIR" ] && [ "$PLE_FS_DIR" != / ]; do PLE_FS_DIR=$(dirname "$PLE_FS_DIR"); done
+  PLE_FS=$(stat -f -c %T "$PLE_FS_DIR")
+  if [ "$PLE_FS" = overlay ]; then
+    # Not a mounted folder but the container's own layer: the 48 GiB file would be lost
+    # with the container (with Compose, uncomment the volume in docker-compose.yml).
+    echo "PLE_SHARED_DIR=$PLE_SHARED_DIR is inside the container, not a mounted host folder: mount it (docker-compose.yml, the commented volume)." >&2
+    exit 2
+  elif [ "$PLE_FS" = tmpfs ]; then
     export VLLM_QWEN_PLE_SHARED_PIN=1
   else
     PLE_MODES=$(nvidia-smi -q 2>/dev/null | awk -F: '/Addressing Mode/ {gsub(/ /, "", $2); print $2}')

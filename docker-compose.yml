@@ -91,7 +91,8 @@ services:
       - ./patches/v1_worker_utils.py:/opt/vllm-src/vllm/v1/worker/utils.py:ro
       # One n-gram table for several servers, or the table on disk: uncomment, and set
       # PLE_SHARED_DIR to the same path in docker/container.env (docs/how-to-use.md,
-      # "Several servers, one table" and "The table on disk").
+      # "Several servers, one table" and "The table on disk"). For the table on disk,
+      # your folder on both sides, e.g. /srv/qwen38-ple:/srv/qwen38-ple.
       # - /dev/shm/qwen38-ple:/dev/shm/qwen38-ple
       - ./cache:/cache
     healthcheck:
