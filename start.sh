@@ -370,7 +370,7 @@ preflight_ple() {
         return 0
     fi
     if command -v nvidia-smi >/dev/null 2>&1; then
-        modes="$(nvidia-smi -q 2>/dev/null | awk -F: '/Addressing Mode/ {gsub(/ /, "", $2); print $2}')"
+        modes="$(nvidia-smi -q 2>/dev/null | awk -F: '/Addressing Mode/ {gsub(/ /, "", $2); print $2}' || true)"
         if [ -z "$modes" ] || printf '%s\n' "$modes" | grep -qv '^HMM$'; then
             die "PLE_SHARED_DIR=$PLE_SHARED_DIR is on $fs, not tmpfs, so the n-gram table would be a file on disk that the cards read through HMM, but nvidia-smi -q does not report 'Addressing Mode: HMM' for every card (HMM needs NVIDIA's open kernel modules). Use a tmpfs directory such as /dev/shm/qwen38-ple, or leave PLE_SHARED_DIR empty."
         fi
@@ -382,8 +382,14 @@ preflight_ple() {
         have_gb="$(du -cBG "$PLE_SHARED_DIR/$PLE_SHARED_NAME".*.bin 2>/dev/null | tail -1 | tr -dc '0-9' || echo 0)"
     fi
     free_gb="$(df -BG --output=avail "$dir" 2>/dev/null | tail -1 | tr -dc '0-9' || true)"
-    if [ -n "${free_gb:-}" ] && [ "$((free_gb + have_gb))" -lt 48 ]; then
-        die "PLE_SHARED_DIR=$PLE_SHARED_DIR has ${free_gb} GiB free and ${have_gb} GiB of the table written; the n-gram table file needs 48 GiB"
+    # On the checkpoint's filesystem, before the download, both must fit.
+    local need=48
+    if [ "$(stat -c %d "$dir" 2>/dev/null)" = "$(stat -c %d "$(existing_dir "$MODELS_DIR")" 2>/dev/null)" ] \
+        && ! models_present; then
+        need=$((48 + NEED_DISK_GB))
+    fi
+    if [ -n "${free_gb:-}" ] && [ "$((free_gb + have_gb))" -lt "$need" ]; then
+        die "PLE_SHARED_DIR=$PLE_SHARED_DIR has ${free_gb} GiB free and ${have_gb} GiB of the table written; the n-gram table file needs 48 GiB (${need} GiB with the checkpoint still to download on the same filesystem)"
     fi
     log "  n-gram table: a file on disk, read through HMM ($PLE_SHARED_DIR, $fs)"
 }

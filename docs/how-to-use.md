@@ -4,7 +4,7 @@
 
 - One CMP 170HX card exposing 64 GiB, measured on an x16 link, in a Linux host
   with **96 GB of RAM or more** (the n-gram table takes 64 GiB of it as the engine
-  allocates it, 48 GiB shared with `PLE_SHARED_DIR`) and NVIDIA driver 580 or
+  allocates it, 48 GiB shared on tmpfs with `PLE_SHARED_DIR`) and NVIDIA driver 580 or
   newer; with less RAM, keep the table on disk ([below](#the-table-on-disk)). Two cards? See the two-card recipe,
   [qwen38-flash-next-w4a16-2x-cmp170hx-recipe](https://github.com/ElectroHobo/qwen38-flash-next-w4a16-2x-cmp170hx-recipe). Add `KV_OFFLOAD_GB` to the RAM figure if you turn the KV
   tier on.
@@ -100,6 +100,10 @@ For a host with less than 96 GB of RAM, keep the table in a file instead:
 ```
 PLE_SHARED_DIR=/srv/qwen38-ple   # any folder on a disk filesystem (ext4, xfs, ...)
 ```
+
+The server runs as you, so the folder must be yours:
+`sudo mkdir -p /srv/qwen38-ple && sudo chown $USER /srv/qwen38-ple` for one under a
+root-owned folder such as `/srv`.
 
 The first start writes the 48 GiB file there from the checkpoint (it took about
 6 minutes from start to healthy here, the write included); later starts compare
