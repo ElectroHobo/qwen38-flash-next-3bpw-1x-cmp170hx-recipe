@@ -183,10 +183,12 @@ CONTAINER_NAME="${CONTAINER_NAME:-qwen38-flash-next-1x}"
 # what lets 128 requests fit. 0 = the engine's own per-draft states.
 RECOVER_SSM="${RECOVER_SSM:-1}"
 case "$RECOVER_SSM" in 0|1) ;; *) die "RECOVER_SSM must be 0 or 1" ;; esac
-# One host copy of the n-gram table for several servers: a host directory on tmpfs
-# (e.g. /dev/shm/qwen38-ple), mounted read-write at the same path. Every server
-# given the same PLE_SHARED_DIR and PLE_SHARED_NAME maps the same 48 GiB instead of
-# pinning its own (64 GiB each); empty = off, the table is the server's own.
+# One host copy of the n-gram table for several servers: a host directory, mounted
+# read-write at the same path. Every server given the same PLE_SHARED_DIR and
+# PLE_SHARED_NAME maps the same 48 GiB instead of pinning its own (64 GiB each); empty =
+# off, the table is the server's own. On tmpfs (e.g. /dev/shm/qwen38-ple) the table is
+# pinned in RAM; on a disk filesystem it is a file there, which the GPU reads through HMM
+# and the page cache keeps in RAM as far as memory allows (serve.sh decides).
 PLE_SHARED_DIR="${PLE_SHARED_DIR:-}"
 if [ -n "$PLE_SHARED_DIR" ]; then
     [[ "$PLE_SHARED_DIR" = /* ]] || die "PLE_SHARED_DIR must be an absolute path"
@@ -334,6 +336,8 @@ preflight() {
         log "  disk: ${avail_gb} GiB free at $MODELS_DIR"
     fi
 
+    preflight_ple
+
     if [ "$check_port" = 1 ]; then
         if ! port_busy; then
             log "  port $PORT: free"
@@ -345,6 +349,39 @@ preflight() {
             die "port $PORT is already taken by another process. Set PORT to a free one, or stop whatever holds it."
         fi
     fi
+}
+
+# A path, or its nearest existing parent: DRY creates nothing, so the folder may not exist yet.
+existing_dir() {
+    local d="$1"
+    while [ ! -e "$d" ] && [ "$d" != / ]; do d="$(dirname "$d")"; done
+    printf '%s' "$d"
+}
+
+# With PLE_SHARED_DIR: RAM (tmpfs) or a file on disk, which needs every card to read host
+# memory through HMM and 48 GiB free for the file. serve.sh repeats the HMM check.
+preflight_ple() {
+    [ -n "$PLE_SHARED_DIR" ] || return 0
+    local dir fs free_gb modes
+    dir="$(existing_dir "$PLE_SHARED_DIR")"
+    fs="$(stat -f -c %T "$dir" 2>/dev/null || echo unknown)"
+    if [ "$fs" = tmpfs ]; then
+        log "  n-gram table: shared, in RAM ($PLE_SHARED_DIR)"
+        return 0
+    fi
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        modes="$(nvidia-smi -q 2>/dev/null | awk -F: '/Addressing Mode/ {gsub(/ /, "", $2); print $2}')"
+        if [ -z "$modes" ] || printf '%s\n' "$modes" | grep -qv '^HMM$'; then
+            die "PLE_SHARED_DIR=$PLE_SHARED_DIR is on $fs, not tmpfs, so the n-gram table would be a file on disk that the cards read through HMM, but nvidia-smi -q does not report 'Addressing Mode: HMM' for every card (HMM needs NVIDIA's open kernel modules). Use a tmpfs directory such as /dev/shm/qwen38-ple, or leave PLE_SHARED_DIR empty."
+        fi
+    fi
+    if ! ls "$PLE_SHARED_DIR/$PLE_SHARED_NAME".*.bin >/dev/null 2>&1; then
+        free_gb="$(df -BG --output=avail "$dir" 2>/dev/null | tail -1 | tr -dc '0-9' || true)"
+        if [ -n "${free_gb:-}" ] && [ "$free_gb" -lt 48 ]; then
+            die "PLE_SHARED_DIR=$PLE_SHARED_DIR has ${free_gb} GiB free; the n-gram table file needs 48 GiB"
+        fi
+    fi
+    log "  n-gram table: a file on disk, read through HMM ($PLE_SHARED_DIR, $fs)"
 }
 
 # Docker must be installed and usable by this user, with the NVIDIA Container

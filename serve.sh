@@ -266,9 +266,23 @@ RECOVER_SSM=${RECOVER_SSM:-$QWEN_DEFAULT_RECOVER_SSM}
 case "$RECOVER_SSM" in 0|1) ;; *) echo 'RECOVER_SSM must be 0 or 1' >&2; exit 2 ;; esac
 if [ "$RECOVER_SSM" = 1 ]; then export VLLM_GDN_RECOVER=1; else unset VLLM_GDN_RECOVER; fi
 # PLE_SHARED_DIR: the n-gram table as one shared host copy (patches/qwen4_exp_common_ngram_embedding.py).
+# On tmpfs it is pinned in RAM; on any other filesystem it is a file there, mapped unpinned
+# and read by the cards through HMM, which every card must report.
 if [ -n "${PLE_SHARED_DIR:-}" ]; then
   export VLLM_QWEN_PLE_SHARED_DIR=$PLE_SHARED_DIR
   export VLLM_QWEN_PLE_SHARED_NAME=${PLE_SHARED_NAME:-qwen38-flash-next-ple-fp8}
+  PLE_FS=$(stat -f -c %T "$PLE_SHARED_DIR")
+  if [ "$PLE_FS" = tmpfs ]; then
+    export VLLM_QWEN_PLE_SHARED_PIN=1
+  else
+    PLE_MODES=$(nvidia-smi -q 2>/dev/null | awk -F: '/Addressing Mode/ {gsub(/ /, "", $2); print $2}')
+    if [ -z "$PLE_MODES" ] || printf '%s\n' "$PLE_MODES" | grep -qv '^HMM$'; then
+      echo "PLE_SHARED_DIR=$PLE_SHARED_DIR is on $PLE_FS, not tmpfs: the n-gram table would be read from disk through HMM, but nvidia-smi -q does not report 'Addressing Mode: HMM' for every card. Use a tmpfs directory (e.g. /dev/shm/qwen38-ple)." >&2
+      exit 2
+    fi
+    export VLLM_QWEN_PLE_SHARED_PIN=0
+    echo "n-gram table: a file in $PLE_SHARED_DIR ($PLE_FS), read through HMM"
+  fi
 fi
 SPEC=()
 if [ "$MODE" = mtp ]; then

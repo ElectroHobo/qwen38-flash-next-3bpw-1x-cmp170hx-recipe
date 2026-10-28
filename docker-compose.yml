@@ -89,8 +89,9 @@ services:
       - ./patches/qwen4_exp_common_ngram_embedding.py:/opt/vllm-src/vllm/models/qwen4_exp/common/ngram_embedding.py:ro
       - ./patches/inc_config_parser.py:/opt/vllm-src/vllm/model_executor/layers/quantization/inc/config_parser.py:ro
       - ./patches/v1_worker_utils.py:/opt/vllm-src/vllm/v1/worker/utils.py:ro
-      # One n-gram table for several servers: uncomment, and set PLE_SHARED_DIR to the
-      # same path in docker/container.env (README, "Several servers, one table").
+      # One n-gram table for several servers, or the table on disk: uncomment, and set
+      # PLE_SHARED_DIR to the same path in docker/container.env (docs/how-to-use.md,
+      # "Several servers, one table" and "The table on disk").
       # - /dev/shm/qwen38-ple:/dev/shm/qwen38-ple
       - ./cache:/cache
     healthcheck:

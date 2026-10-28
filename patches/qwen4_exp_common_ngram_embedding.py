@@ -4,6 +4,8 @@
 # Modified 2026-10-23 by ElectroHobo for the qwen38-flash-next-3bpw-1x-cmp170hx-recipe:
 # the n-gram table of AutoRound (INC) checkpoints loads, and one host copy
 # of the table can serve several servers (VLLM_QWEN_PLE_SHARED_DIR) (patches/README.md).
+# Modified 2026-10-28 by ElectroHobo: that copy can be a file on disk, read through HMM
+# (VLLM_QWEN_PLE_SHARED_PIN=0).
 # Otherwise identical to Morrowmake/vllm-cmp170hx at 18305948acba3f4c4d912cdd56f2202d2ebd94e8.
 """Shared Qwen4Exp n-gram embedding storage with device and pinned-host backends.
 
@@ -280,6 +282,17 @@ class Qwen4ExpPLEEmbeddingMethod(QuantizeMethodBase):
     ) -> None:
         """Copy the ETP-owned rows for ``ids`` from pinned host memory."""
         row_bytes = layer.embedding_dim * layer.weight.element_size()
+        if layer._hmm_addr is not None:
+            _lookup_ple_embedding_from_hmm_kernel[(ids.numel(),)](
+                layer._hmm_addr,
+                ids,
+                output,
+                row_bytes,
+                layer.shard_indices.org_vocab_start_index,
+                layer.shard_indices.org_vocab_end_index,
+                BLOCK_D=triton.next_power_of_2(row_bytes),
+            )
+            return
         _lookup_ple_embedding_from_pinned_kernel[(ids.numel(),)](
             layer._uva_weight,
             ids,
@@ -641,6 +654,47 @@ def _lookup_ple_embedding_from_pinned_kernel(
 # with a different table stops at load instead of changing another server's rows.
 _PLE_SHARED_DIR = os.environ.get("VLLM_QWEN_PLE_SHARED_DIR", "")
 _PLE_SHARED_NAME = os.environ.get("VLLM_QWEN_PLE_SHARED_NAME", "")
+# Recipe change: the table on disk. With VLLM_QWEN_PLE_SHARED_PIN=0 (serve.sh sets it when
+# <dir> is not tmpfs) the shared mapping is not registered: the file is on a disk
+# filesystem, the page cache decides which rows stay in RAM, and the GPU reads the mapping
+# through HMM (the open kernel modules with HMM addressing; serve.sh checks).
+_PLE_SHARED_PIN = os.environ.get("VLLM_QWEN_PLE_SHARED_PIN", "1") != "0"
+
+
+@triton.jit
+def _lookup_ple_embedding_from_hmm_kernel(
+    weight_addr,
+    ids_ptr,
+    output_ptr: tl.pointer_type(tl.uint8),  # type: ignore[valid-type]
+    row_bytes,
+    tp_vocab_start,
+    tp_vocab_end,
+    BLOCK_D: tl.constexpr,
+):
+    """As the pinned kernel, reading an unpinned file mapping through HMM.
+
+    The table address comes in as an integer: Triton refuses a tensor whose memory
+    CUDA does not know, but the GPU can read the address itself under HMM, and pages
+    not in the page cache are read from the file by the kernel's fault handling.
+    """
+    weight_ptr = weight_addr.to(tl.pointer_type(tl.uint8))
+    row_id = tl.program_id(0).to(tl.int64)
+    global_idx = tl.load(ids_ptr + row_id)
+    in_range = (global_idx >= tp_vocab_start) & (global_idx < tp_vocab_end)
+    local_idx = tl.where(in_range, global_idx - tp_vocab_start, 0)
+    offsets = tl.arange(0, BLOCK_D)
+    store_mask = offsets < row_bytes
+    load_mask = store_mask & in_range
+    values = tl.load(
+        weight_ptr + local_idx * row_bytes + offsets,
+        mask=load_mask,
+        other=0,
+    )
+    tl.store(
+        output_ptr + row_id * row_bytes + offsets,
+        values,
+        mask=store_mask,
+    )
 
 
 class Qwen4ExpPLEPinnedHostEmbedding(Qwen4ExpPLEEmbedding):
@@ -648,6 +702,7 @@ class Qwen4ExpPLEPinnedHostEmbedding(Qwen4ExpPLEEmbedding):
 
     supports_prefetch: ClassVar[bool] = True
     _shared_path: str | None = None
+    _hmm_addr: int | None = None
 
     def __init__(
         self,
@@ -677,7 +732,13 @@ class Qwen4ExpPLEPinnedHostEmbedding(Qwen4ExpPLEEmbedding):
             data_parallel_rank=data_parallel_rank,
             reduce_results=reduce_results,
         )
-        self._uva_weight = get_accelerator_view_from_cpu_tensor(self.weight)
+        if self._shared_path is not None and not _PLE_SHARED_PIN:
+            self._uva_weight = None
+            self._hmm_addr = self.weight.data_ptr()
+            self._lookup_device = torch.device("cuda", torch.cuda.current_device())
+        else:
+            self._uva_weight = get_accelerator_view_from_cpu_tensor(self.weight)
+            self._lookup_device = self._uva_weight.device
         self._prefetch_stream: torch.cuda.Stream | None = None
         self._prefetch_buffer: torch.Tensor | None = None
         self._prefetch_alloc_lock = threading.Lock()
@@ -728,12 +789,15 @@ class Qwen4ExpPLEPinnedHostEmbedding(Qwen4ExpPLEEmbedding):
             finally:
                 os.close(fd)
         raw = torch.frombuffer(self._shared_mmap, dtype=torch.uint8)
-        rc = torch.cuda.cudart().cudaHostRegister(raw.data_ptr(), raw.numel(), 0)
-        if rc != torch.cuda.cudart().cudaError.success:
-            raise RuntimeError(f"shared PLE table: cudaHostRegister failed ({rc}) for {path}")
+        if _PLE_SHARED_PIN:
+            rc = torch.cuda.cudart().cudaHostRegister(raw.data_ptr(), raw.numel(), 0)
+            if rc != torch.cuda.cudart().cudaError.success:
+                raise RuntimeError(
+                    f"shared PLE table: cudaHostRegister failed ({rc}) for {path}")
         self._shared_path = path
-        logger.info("PLE table rows %d-%d mapped from shared %s (%.2f GiB, registered)",
-                    start, start + num_embeddings, path, (end - begin) / 2**30)
+        logger.info("PLE table rows %d-%d mapped from shared %s (%.2f GiB, %s)",
+                    start, start + num_embeddings, path, (end - begin) / 2**30,
+                    "registered" if _PLE_SHARED_PIN else "unpinned, read through HMM")
         return raw[lead:].view(num_embeddings, row_bytes).view(dtype).view(
             num_embeddings, embedding_dim)
 
@@ -842,14 +906,14 @@ class Qwen4ExpPLEPinnedHostEmbedding(Qwen4ExpPLEEmbedding):
                             "eagerly, before cudagraph capture"
                         )
                     self._prefetch_stream = torch.cuda.Stream(
-                        device=self._uva_weight.device
+                        device=self._lookup_device
                     )
                     buffer = torch.empty(
                         self._prefetch_rows,
                         self._num_ngram_heads,
                         self.embedding_dim,
                         dtype=self.embedding_method.lookup_dtype(self),
-                        device=self._uva_weight.device,
+                        device=self._lookup_device,
                     )
                     self._prefetch_buffer = buffer
         prefetch_stream = self._prefetch_stream

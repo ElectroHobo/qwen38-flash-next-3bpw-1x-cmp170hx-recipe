@@ -14,7 +14,7 @@ is used as released. Each file keeps its licence header and says what changed.
 | `mamba_gdn_qwen_gdn_linear_attn.py` | `model_executor/layers/mamba/gdn/qwen_gdn_linear_attn.py` | always | RecoverSSM in the GDN layer (inert with `RECOVER_SSM=0`) |
 | `qwen4_exp_nvidia_model_state.py` | `models/qwen4_exp/nvidia/model_state.py` | always | RecoverSSM: the commit after sampling |
 | `qwen4_exp_nvidia_ple_layer.py` | `models/qwen4_exp/nvidia/ple_layer.py` | always | RecoverSSM for the PLE short-conv layers |
-| `qwen4_exp_common_ngram_embedding.py` | `models/qwen4_exp/common/ngram_embedding.py` | always | the AutoRound (INC) checkpoint's n-gram table loads; the table as one shared host copy (`PLE_SHARED_DIR`) |
+| `qwen4_exp_common_ngram_embedding.py` | `models/qwen4_exp/common/ngram_embedding.py` | always | the AutoRound (INC) checkpoint's n-gram table loads; the table as one shared host copy (`PLE_SHARED_DIR`), in RAM or in a file on disk read through HMM |
 | `inc_config_parser.py` | `model_executor/layers/quantization/inc/config_parser.py` | always | AutoRound's per-layer expert bits reach this engine's expert layer; the MTP layer's bits resolve |
 | `v1_worker_utils.py` | `v1/worker/utils.py` | always | copy-on-write block copies in chunks |
 
@@ -128,6 +128,16 @@ file lock; a server whose table differs stops at load instead of changing rows
 another server reads. Measured: two servers (one card and two cards) in 48 GiB of
 host shared memory together, against 64 GiB for one before; step times and outputs
 as with a private table.
+
+**The table on disk (0.2.0).** When `PLE_SHARED_DIR` is not on tmpfs, `serve.sh` sets
+`VLLM_QWEN_PLE_SHARED_PIN=0` and the mapping is not registered: a disk file cannot be
+pinned (the kernel refuses long-term pins of its pages, so `cudaHostRegister` fails), and
+it need not be. The lookup runs a copy of the pinned kernel,
+`_lookup_ple_embedding_from_hmm_kernel`, that takes the table's address as an integer:
+Triton refuses a tensor over memory CUDA does not know, but under HMM the card reads the
+host address itself, and a page not in the page cache is read from the file by the
+kernel. The lookup stays inside the CUDA graph, so the step stays off the CPU. Rows and
+outputs are the same as from RAM; the cost is in [docs/results.md](../docs/results.md#the-table-on-disk).
 
 ## Copy-on-write in chunks
 
