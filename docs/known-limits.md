@@ -2,8 +2,10 @@
 
 ## Status
 
-Release 0.1.0 (2026-10-24). Measured on one box: a dual Xeon E5-2697A v4 host
-with CMP 170HX cards, this recipe on one of them. The configuration ran through
+Release 0.2.0 (2026-10-28). Measured on one box: a dual Xeon E5-2697A v4 host
+with CMP 170HX cards, this recipe on one of them. 0.2.0 adds the n-gram table on
+disk, checked from fresh clones the night of 2026-10-27; it has not served real
+traffic yet. The configuration ran through
 two days of development benchmarks, debug checks and quality runs beside the
 two-card recipe, then the release benchmarks from a fresh clone. It has not
 served real traffic for days yet.
@@ -18,11 +20,21 @@ served real traffic for days yet.
   12–35), the rest 3-bit; that is what fits a 125B MoE on one card. The two-card
   recipe's 4-bit experts score 162/164 and 198/200 on the same suites, which are
   not where such a difference would show first.
-- **96 GB of host RAM is the floor.** The n-gram table is 48 GiB of pinned host
-  memory (64 GiB as the engine allocates it), allocated at start; the engine
-  refuses to start without it. `PLE_SHARED_DIR` shares one copy between servers,
-  this recipe's and the two-card recipe's; its file stays in RAM until a reboot
-  or until you delete it.
+- **96 GB of host RAM with the table in RAM.** The n-gram table is 48 GiB of
+  pinned host memory (64 GiB as the engine allocates it), allocated at start.
+  `PLE_SHARED_DIR` on tmpfs shares one copy between servers, this recipe's and the
+  two-card recipe's; its file stays in RAM until a reboot or until you delete it.
+  With `PLE_SHARED_DIR` on a disk filesystem the table is a file read through HMM
+  and the floor is much lower (14 GiB for the whole container on our prompts);
+  below the table's working set every missing row is a read from the file, and
+  prose pays most.
+- **The table on disk needs HMM** (NVIDIA's open kernel modules) and 48 GiB of
+  disk beside the checkpoint (the built checkpoint holds the same rows in another
+  layout). It reads prompts about 20 % slower than from RAM: a long new prompt
+  touches many pages the card has not mapped yet. On one card the disk costs more
+  than on two (each card of the two-card recipe holds half the rows): 4–10 % at
+  eight users against the two-card recipe's 1–4 %. Measured on one host, with the
+  files on an NVMe stripe; a slower disk makes every missing row slower.
 - **One card, so nothing to split, and nothing to grow into.** The checkpoint
   takes 47 GiB of the card's 64; what is left holds the KV pool and the
   recurrent states of up to 48 requests. More requests need the two-card recipe.

@@ -1,0 +1,97 @@
+== 21:50:53 A: pinned table in /dev/shm/qwen-ple (today)
+(Worker_TP0_EP0 pid=1035) INFO 10-28 02:53:15 [ngram_embedding.py:791] PLE table rows 0-160000768 mapped from shared /dev/shm/qwen-ple/flash-next-ple-fp8.language_model.model.layers.1.ple.ple_embedding.ngram_embedding.160.float8_e4m3fn.bin (23.84 GiB, registered)
+(Worker_TP1_EP1 pid=1036) INFO 10-28 02:53:21 [ngram_embedding.py:791] PLE table rows 160000768-320001536 mapped from shared /dev/shm/qwen-ple/flash-next-ple-fp8.language_model.model.layers.1.ple.ple_embedding.ngram_embedding.160.float8_e4m3fn.bin (23.84 GiB, registered)
+(EngineCore pid=723) INFO 10-28 02:53:22 [ngram_embedding.py:791] PLE table rows 0-320001536 mapped from shared /dev/shm/qwen-ple/flash-next-ple-fp8.language_model.model.layers.1.ple.ple_embedding.ngram_embedding.160.float8_e4m3fn.bin (47.68 GiB, registered)
+host RAM: used 85 G, page cache 279 G, shared 49 G
+table resident 47.7 of 0.0 GiB
+  2x-pinned:   1 user(s) structured   249.0 tok/s
+  2x-pinned:   1 user(s) code         355.9 tok/s
+  2x-pinned:   1 user(s) prose        192.6 tok/s
+  2x-pinned:   8 user(s) structured   890.2 tok/s
+  2x-pinned:   8 user(s) code        1001.0 tok/s
+  2x-pinned:   8 user(s) prose        762.3 tok/s
+  2x-pinned: | Streaming decode, 1 user, structured / code / prose | 249.0 / 355.9 / 192.6 tok/s |
+  2x-pinned: | Decode, 8 users, aggregate, structured / code / prose | 890.2 / 1001.0 / 762.3 tok/s |
+  1x-pinned:   1 user(s) structured   218.4 tok/s
+  1x-pinned:   1 user(s) code         278.3 tok/s
+  1x-pinned:   1 user(s) prose        137.1 tok/s
+  1x-pinned:   8 user(s) structured   793.1 tok/s
+  1x-pinned:   8 user(s) code         804.3 tok/s
+  1x-pinned:   8 user(s) prose        575.3 tok/s
+  1x-pinned: | Streaming decode, 1 user, structured / code / prose | 218.4 / 278.3 / 137.1 tok/s |
+  1x-pinned: | Decode, 8 users, aggregate, structured / code / prose | 793.1 / 804.3 / 575.3 tok/s |
+host RAM: used 84 G, page cache 285 G, shared 49 G
+table resident 47.7 of 0.0 GiB
+== 22:01:50 B: unpinned file on the stripe, /srv/models/ple-hmm, read through HMM
+(Worker_TP0_EP0 pid=628) INFO 10-28 03:03:39 [ngram_embedding.py:791] PLE table rows 0-160000768 mapped from shared /srv/models/ple-hmm/flash-next-ple-fp8.language_model.model.layers.1.ple.ple_embedding.ngram_embedding.160.float8_e4m3fn.bin (23.84 GiB, unpinned, read through HMM)
+(Worker_TP1_EP1 pid=629) INFO 10-28 03:03:39 [ngram_embedding.py:791] PLE table rows 160000768-320001536 mapped from shared /srv/models/ple-hmm/flash-next-ple-fp8.language_model.model.layers.1.ple.ple_embedding.ngram_embedding.160.float8_e4m3fn.bin (23.84 GiB, unpinned, read through HMM)
+(EngineCore pid=453) INFO 10-28 03:03:20 [ngram_embedding.py:791] PLE table rows 0-320001536 mapped from shared /srv/models/ple-hmm/flash-next-ple-fp8.language_model.model.layers.1.ple.ple_embedding.ngram_embedding.160.float8_e4m3fn.bin (47.68 GiB, unpinned, read through HMM)
+host RAM: used 36 G, page cache 301 G, shared 1 G
+table resident 47.7 of 0.0 GiB
+== 22:08:10 B cold: page cache dropped
+host RAM: used 35 G, page cache 51 G, shared 1 G
+table resident 47.7 of 0.0 GiB
+  2x-hmm-cold:   1 user(s) structured   240.3 tok/s
+  2x-hmm-cold:   1 user(s) code         350.2 tok/s
+  2x-hmm-cold:   1 user(s) prose        200.7 tok/s
+  2x-hmm-cold:   8 user(s) structured   866.1 tok/s
+  2x-hmm-cold:   8 user(s) code         976.7 tok/s
+  2x-hmm-cold:   8 user(s) prose        708.7 tok/s
+  2x-hmm-cold: | Streaming decode, 1 user, structured / code / prose | 240.3 / 350.2 / 200.7 tok/s |
+  2x-hmm-cold: | Decode, 8 users, aggregate, structured / code / prose | 866.1 / 976.7 / 708.7 tok/s |
+  1x-hmm-cold:   1 user(s) structured   192.2 tok/s
+  1x-hmm-cold:   1 user(s) code         255.5 tok/s
+  1x-hmm-cold:   1 user(s) prose        140.5 tok/s
+  1x-hmm-cold:   8 user(s) structured   755.1 tok/s
+  1x-hmm-cold:   8 user(s) code         767.4 tok/s
+  1x-hmm-cold:   8 user(s) prose        531.7 tok/s
+  1x-hmm-cold: | Streaming decode, 1 user, structured / code / prose | 192.2 / 255.5 / 140.5 tok/s |
+  1x-hmm-cold: | Decode, 8 users, aggregate, structured / code / prose | 755.1 / 767.4 / 531.7 tok/s |
+host RAM: used 35 G, page cache 57 G, shared 1 G
+table resident 47.7 of 0.0 GiB
+== 22:10:35 B warm: the same again
+  2x-hmm-warm:   1 user(s) structured   234.7 tok/s
+  2x-hmm-warm:   1 user(s) code         345.6 tok/s
+  2x-hmm-warm:   1 user(s) prose        198.7 tok/s
+  2x-hmm-warm:   8 user(s) structured   875.1 tok/s
+  2x-hmm-warm:   8 user(s) code         973.9 tok/s
+  2x-hmm-warm:   8 user(s) prose        744.6 tok/s
+  2x-hmm-warm: | Streaming decode, 1 user, structured / code / prose | 234.7 / 345.6 / 198.7 tok/s |
+  2x-hmm-warm: | Decode, 8 users, aggregate, structured / code / prose | 875.1 / 973.9 / 744.6 tok/s |
+  1x-hmm-warm:   1 user(s) structured   192.3 tok/s
+  1x-hmm-warm:   1 user(s) code         270.5 tok/s
+  1x-hmm-warm:   1 user(s) prose        134.3 tok/s
+  1x-hmm-warm:   8 user(s) structured   753.6 tok/s
+  1x-hmm-warm:   8 user(s) code         753.7 tok/s
+  1x-hmm-warm:   8 user(s) prose        529.0 tok/s
+  1x-hmm-warm: | Streaming decode, 1 user, structured / code / prose | 192.3 / 270.5 / 134.3 tok/s |
+  1x-hmm-warm: | Decode, 8 users, aggregate, structured / code / prose | 753.6 / 753.7 / 529.0 tok/s |
+host RAM: used 35 G, page cache 63 G, shared 1 G
+table resident 47.7 of 0.0 GiB
+== 22:12:53 done; servers left up in mode B
+== 22:14:24 pressure: balloon 260 GiB
+host RAM: used 292 G, free 1 G, page cache 312 G
+table resident 47.7 of 47.7 GiB
+pswpout 1104573 pgmajfault 697875 
+  2x-hmm-260: | Streaming decode, 1 user, structured / code / prose | 246.9 / 330.3 / 193.8 tok/s |
+  2x-hmm-260: | Decode, 8 users, aggregate, structured / code / prose | 861.0 / 971.3 / 562.8 tok/s |
+  1x-hmm-260: | Streaming decode, 1 user, structured / code / prose | 207.1 / 264.6 / 138.2 tok/s |
+  1x-hmm-260: | Decode, 8 users, aggregate, structured / code / prose | 764.6 / 739.1 / 458.1 tok/s |
+host RAM: used 290 G, free 3 G, page cache 309 G
+table resident 47.7 of 47.7 GiB
+pswpout 2097729 pgmajfault 700380 
+== 22:20:50 pressure: balloon 280 GiB
+host RAM: used 307 G, free 5 G, page cache 315 G
+table resident 30.3 of 47.7 GiB
+pswpout 4038590 pgmajfault 702779 
+  2x-hmm-280: | Streaming decode, 1 user, structured / code / prose | 219.6 / 339.6 / 162.1 tok/s |
+  2x-hmm-280: | Decode, 8 users, aggregate, structured / code / prose | 780.0 / 890.6 / 487.0 tok/s |
+  1x-hmm-280: | Streaming decode, 1 user, structured / code / prose | 196.3 / 239.1 / 121.4 tok/s |
+  1x-hmm-280: | Decode, 8 users, aggregate, structured / code / prose | 695.1 / 712.5 / 391.5 tok/s |
+host RAM: used 309 G, free 3 G, page cache 316 G
+table resident 28.5 of 47.7 GiB
+pswpout 4043172 pgmajfault 878916 
+== 22:30:03 pressure done; balloon released
+host RAM: used 31 G, free 281 G, page cache 37 G
+table resident 28.5 of 47.7 GiB
+pswpout 4043172 pgmajfault 878940 

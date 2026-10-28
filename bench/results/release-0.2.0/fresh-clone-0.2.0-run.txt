@@ -1,0 +1,257 @@
+Result=success
+== 1. default: each build's own pinned table 22:59:45
+  qwen38-1x-020 start exit 0 23:17:12
+  qwen38 · healthy after 1039s
+  [boot-check] enabled: two temperature-0 requests
+  [boot-check] PASS: OK; drafts=101 proposed=707 accepted=666
+  qwen38 ·   GPU KV cache size: 292,784 tokens, Maximum concurrency for 262,144 tokens per request: 1.12x
+  qwen38-2x-030 start exit 0 23:20:44
+  qwen38 · healthy after 1249s
+  [boot-check] enabled: two temperature-0 requests
+  [boot-check] PASS: OK; drafts=102 proposed=714 accepted=667
+  qwen38 ·   GPU KV cache size: 1,475,836 tokens, Maximum concurrency for 262,144 tokens per request: 5.63x
+  host RAM: used 164 G, page cache 311 G, shared 129 G
+  030-2x-default: | | |
+  030-2x-default: |---|---:|
+  030-2x-default: | Streaming decode, 1 user, structured / code / prose | 234.9 / 358.6 / 200.8 tok/s |
+  030-2x-default: | Decode, 2 users, aggregate, structured / code / prose | 361.2 / 530.5 / 315.0 tok/s |
+  030-2x-default: | Decode, 4 users, aggregate, structured / code / prose | 563.3 / 724.8 / 478.9 tok/s |
+  030-2x-default: | Decode, 8 users, aggregate, structured / code / prose | 885.9 / 980.9 / 753.0 tok/s |
+  020-1x-default: | | |
+  020-1x-default: |---|---:|
+  020-1x-default: | Streaming decode, 1 user, structured / code / prose | 200.0 / 295.0 / 146.2 tok/s |
+  020-1x-default: | Decode, 2 users, aggregate, structured / code / prose | 326.6 / 405.4 / 217.9 tok/s |
+  020-1x-default: | Decode, 4 users, aggregate, structured / code / prose | 516.4 / 614.7 / 367.8 tok/s |
+  020-1x-default: | Decode, 8 users, aggregate, structured / code / prose | 785.5 / 792.1 / 598.7 tok/s |
+saved 5 replies from :18441 to /root/v030-same-2x-ram.json
+saved 5 replies from :18442 to /root/v030-same-1x-ram.json
+== 2. disk mode, DFlash 2: PLE_SHARED_DIR=/srv/models/qwen38-ple (first start writes the file) 23:25:00
+  qwen38-1x-020 start exit 0 23:31:13
+  qwen38 ·   n-gram table: a file on disk, read through HMM (/srv/models/qwen38-ple, xfs)
+  qwen38 · healthy after 348s
+  [boot-check] enabled: two temperature-0 requests
+  [boot-check] PASS: OK; drafts=101 proposed=707 accepted=666
+  qwen38 ·   GPU KV cache size: 298,742 tokens, Maximum concurrency for 262,144 tokens per request: 1.14x
+  qwen38-2x-030 start exit 0 23:31:26
+  qwen38 ·   n-gram table: a file on disk, read through HMM (/srv/models/qwen38-ple, xfs)
+  qwen38 · healthy after 359s
+  [boot-check] enabled: two temperature-0 requests
+  [boot-check] PASS: OK; drafts=103 proposed=721 accepted=666
+  qwen38 ·   GPU KV cache size: 1,480,943 tokens, Maximum concurrency for 262,144 tokens per request: 5.65x
+  host RAM: used 34 G, page cache 313 G, shared 1 G
+  table file resident 47.7 GiB
+total 50000248
+drwxr-xr-x  2 root root        4096 Oct 27 23:26 .
+drwxr-xr-x 20 root root        4096 Oct 27 23:25 ..
+-rw-------  1 root root 51200245760 Oct 27 23:31 qwen38-flash-next-ple-fp8.language_model.model.layers.1.ple.ple_embedding.ngram_embedding.160.float8_e4m3fn.bin
+-rw-r--r--  1 root root           0 Oct 27 23:26 qwen38-flash-next-ple-fp8.language_model.model.layers.1.ple.ple_embedding.ngram_embedding.160.float8_e4m3fn.bin.lock
+  030-2x-disk: | | |
+  030-2x-disk: |---|---:|
+  030-2x-disk: | Streaming decode, 1 user, structured / code / prose | 232.8 / 344.4 / 199.3 tok/s |
+  030-2x-disk: | Decode, 2 users, aggregate, structured / code / prose | 390.8 / 485.6 / 291.7 tok/s |
+  030-2x-disk: | Decode, 4 users, aggregate, structured / code / prose | 529.8 / 732.2 / 443.6 tok/s |
+  030-2x-disk: | Decode, 8 users, aggregate, structured / code / prose | 878.8 / 976.0 / 726.2 tok/s |
+  030-2x-disk: | Cold prefill | 4,000 tok/s |
+  030-2x-disk: | Cold prefill prompts (tokens) | 23,831, 34,012, 38,259 |
+  020-1x-disk: | | |
+  020-1x-disk: |---|---:|
+  020-1x-disk: | Streaming decode, 1 user, structured / code / prose | 226.7 / 277.7 / 131.2 tok/s |
+  020-1x-disk: | Decode, 2 users, aggregate, structured / code / prose | 340.3 / 361.3 / 208.6 tok/s |
+  020-1x-disk: | Decode, 4 users, aggregate, structured / code / prose | 501.5 / 599.4 / 348.2 tok/s |
+  020-1x-disk: | Decode, 8 users, aggregate, structured / code / prose | 752.5 / 763.2 / 538.1 tok/s |
+  020-1x-disk: | Cold prefill | 3,376 tok/s |
+  020-1x-disk: | Cold prefill prompts (tokens) | 23,832, 34,010, 38,254 |
+saved 5 replies from :18441 to /root/v030-same-2x-disk.json
+saved 5 replies from :18442 to /root/v030-same-1x-disk.json
+  2x RAM vs disk: same output: 0/5 prompts byte-identical; differ: ['code', 'math', 'prose', 'structured', 'summary']
+  1x RAM vs disk: same output: 0/5 prompts byte-identical; differ: ['code', 'math', 'prose', 'structured', 'summary']
+  030-2x-disk: | users | aggregate tok/s | ms / step | tokens / request-step |
+  030-2x-disk: |---:|---:|---:|---:|
+  030-2x-disk: | 128 | 1850.7 | 151.8 | 2.49 |
+  020-1x-disk: | users | aggregate tok/s | ms / step | tokens / request-step |
+  020-1x-disk: |---:|---:|---:|---:|
+  020-1x-disk: | 48 | 1315.7 | 93.0 | 3.06 |
+  host RAM: used 34 G, page cache 313 G, shared 1 G
+  table file resident 47.7 GiB
+== 3. disk mode, MTP 23:42:10
+  qwen38-1x-020 start exit 0 23:48:51
+  qwen38 ·   n-gram table: a file on disk, read through HMM (/srv/models/qwen38-ple, xfs)
+  qwen38 · healthy after 389s
+  [boot-check] enabled: two temperature-0 requests
+  [boot-check] PASS: OK; drafts=198 proposed=594 accepted=569
+  qwen38 ·   GPU KV cache size: 310,539 tokens, Maximum concurrency for 262,144 tokens per request: 1.18x
+  qwen38-2x-030 start exit 0 23:49:13
+  qwen38 ·   n-gram table: a file on disk, read through HMM (/srv/models/qwen38-ple, xfs)
+  qwen38 · healthy after 410s
+  [boot-check] enabled: two temperature-0 requests
+  [boot-check] PASS: OK; drafts=194 proposed=582 accepted=573
+  qwen38 ·   GPU KV cache size: 1,443,001 tokens, Maximum concurrency for 262,144 tokens per request: 5.50x
+  host RAM: used 31 G, page cache 314 G, shared 1 G
+  table file resident 47.7 GiB
+  030-2x-disk-mtp: | | |
+  030-2x-disk-mtp: |---|---:|
+  030-2x-disk-mtp: | Streaming decode, 1 user, structured / code / prose | 203.9 / 243.3 / 171.7 tok/s |
+  030-2x-disk-mtp: | Decode, 2 users, aggregate, structured / code / prose | 333.0 / 387.0 / 287.7 tok/s |
+  030-2x-disk-mtp: | Decode, 4 users, aggregate, structured / code / prose | 537.3 / 560.2 / 446.2 tok/s |
+  030-2x-disk-mtp: | Decode, 8 users, aggregate, structured / code / prose | 820.6 / 815.6 / 682.9 tok/s |
+  020-1x-disk-mtp: | | |
+  020-1x-disk-mtp: |---|---:|
+  020-1x-disk-mtp: | Streaming decode, 1 user, structured / code / prose | 170.6 / 194.6 / 140.3 tok/s |
+  020-1x-disk-mtp: | Decode, 2 users, aggregate, structured / code / prose | 282.3 / 303.4 / 217.2 tok/s |
+  020-1x-disk-mtp: | Decode, 4 users, aggregate, structured / code / prose | 453.3 / 457.3 / 327.4 tok/s |
+  020-1x-disk-mtp: | Decode, 8 users, aggregate, structured / code / prose | 710.0 / 696.0 / 513.1 tok/s |
+  030-2x-disk-mtp: | users | aggregate tok/s | ms / step | tokens / request-step |
+  030-2x-disk-mtp: |---:|---:|---:|---:|
+  030-2x-disk-mtp: | 128 | 1891.4 | 117.4 | 1.86 |
+  020-1x-disk-mtp: | users | aggregate tok/s | ms / step | tokens / request-step |
+  020-1x-disk-mtp: |---:|---:|---:|---:|
+  020-1x-disk-mtp: | 48 | 1327.5 | 92.7 | 3.08 |
+== 4. RAM floor: one server at a time, disk mode, DFlash 2, container memory capped 23:57:26
+  qwen38-1x-020 start exit 0 00:04:40
+  qwen38 ·   n-gram table: a file on disk, read through HMM (/srv/models/qwen38-ple, xfs)
+  qwen38 · healthy after 420s
+  [boot-check] enabled: two temperature-0 requests
+  [boot-check] PASS: OK; drafts=101 proposed=707 accepted=666
+  qwen38 ·   GPU KV cache size: 297,890 tokens, Maximum concurrency for 262,144 tokens per request: 1.14x
+  1x uncapped: container anon 6 GiB, file 145 GiB
+  host RAM: used 18 G, page cache 168 G, shared 0 G
+  table file resident 47.7 GiB
+  1x capped at 54 GiB (anon + 48):
+  host RAM: used 20 G, page cache 34 G, shared 0 G
+  table file resident 6.3 GiB
+  1x-floor-48: | | |
+  1x-floor-48: |---|---:|
+  1x-floor-48: | Streaming decode, 1 user, structured / code / prose | 178.7 / 230.7 / 100.6 tok/s |
+  1x-floor-48: | Decode, 2 users, aggregate, structured / code / prose | 303.3 / 344.9 / 154.5 tok/s |
+  1x-floor-48: | Decode, 4 users, aggregate, structured / code / prose | 480.0 / 556.3 / 272.9 tok/s |
+  1x-floor-48: | Decode, 8 users, aggregate, structured / code / prose | 720.1 / 702.1 / 474.6 tok/s |
+  host RAM: used 21 G, page cache 41 G, shared 0 G
+  table file resident 7.6 GiB
+  1x capped at 38 GiB (anon + 32):
+  host RAM: used 22 G, page cache 42 G, shared 0 G
+  table file resident 7.6 GiB
+  1x-floor-32: | | |
+  1x-floor-32: |---|---:|
+  1x-floor-32: | Streaming decode, 1 user, structured / code / prose | 212.9 / 257.4 / 123.4 tok/s |
+  1x-floor-32: | Decode, 2 users, aggregate, structured / code / prose | 305.1 / 355.6 / 189.3 tok/s |
+  1x-floor-32: | Decode, 4 users, aggregate, structured / code / prose | 462.4 / 592.1 / 301.7 tok/s |
+  1x-floor-32: | Decode, 8 users, aggregate, structured / code / prose | 729.8 / 771.2 / 468.4 tok/s |
+  host RAM: used 22 G, page cache 48 G, shared 0 G
+  table file resident 8.2 GiB
+  1x capped at 30 GiB (anon + 24):
+  host RAM: used 19 G, page cache 53 G, shared 0 G
+  table file resident 8.2 GiB
+  1x-floor-24: | | |
+  1x-floor-24: |---|---:|
+  1x-floor-24: | Streaming decode, 1 user, structured / code / prose | 195.2 / 256.2 / 134.9 tok/s |
+  1x-floor-24: | Decode, 2 users, aggregate, structured / code / prose | 337.0 / 408.9 / 178.2 tok/s |
+  1x-floor-24: | Decode, 4 users, aggregate, structured / code / prose | 471.4 / 532.1 / 305.9 tok/s |
+  1x-floor-24: | Decode, 8 users, aggregate, structured / code / prose | 743.4 / 738.3 / 463.6 tok/s |
+  host RAM: used 19 G, page cache 60 G, shared 0 G
+  table file resident 8.8 GiB
+  1x capped at 22 GiB (anon + 16):
+  host RAM: used 20 G, page cache 60 G, shared 0 G
+  table file resident 8.8 GiB
+  1x-floor-16: | | |
+  1x-floor-16: |---|---:|
+  1x-floor-16: | Streaming decode, 1 user, structured / code / prose | 218.1 / 266.9 / 138.4 tok/s |
+  1x-floor-16: | Decode, 2 users, aggregate, structured / code / prose | 293.2 / 344.1 / 185.0 tok/s |
+  1x-floor-16: | Decode, 4 users, aggregate, structured / code / prose | 474.2 / 528.8 / 319.3 tok/s |
+  1x-floor-16: | Decode, 8 users, aggregate, structured / code / prose | 767.0 / 767.3 / 466.6 tok/s |
+  host RAM: used 20 G, page cache 66 G, shared 0 G
+  table file resident 9.3 GiB
+  1x capped at 14 GiB (anon + 8):
+  host RAM: used 22 G, page cache 61 G, shared 0 G
+  table file resident 8.2 GiB
+  1x-floor-8: | | |
+  1x-floor-8: |---|---:|
+  1x-floor-8: | Streaming decode, 1 user, structured / code / prose | 197.7 / 259.9 / 122.1 tok/s |
+  1x-floor-8: | Decode, 2 users, aggregate, structured / code / prose | 295.9 / 358.7 / 188.3 tok/s |
+  1x-floor-8: | Decode, 4 users, aggregate, structured / code / prose | 466.8 / 531.1 / 296.8 tok/s |
+  1x-floor-8: | Decode, 8 users, aggregate, structured / code / prose | 723.7 / 758.9 / 468.1 tok/s |
+  host RAM: used 22 G, page cache 69 G, shared 0 G
+  table file resident 8.8 GiB
+  qwen38-2x-030 start exit 0 00:28:17
+  qwen38 ·   n-gram table: a file on disk, read through HMM (/srv/models/qwen38-ple, xfs)
+  qwen38 · healthy after 508s
+  [boot-check] enabled: two temperature-0 requests
+  [boot-check] PASS: OK; drafts=101 proposed=707 accepted=667
+  qwen38 ·   GPU KV cache size: 1,480,943 tokens, Maximum concurrency for 262,144 tokens per request: 5.65x
+  2x uncapped: container anon 14 GiB, file 167 GiB
+  host RAM: used 31 G, page cache 191 G, shared 1 G
+  table file resident 47.7 GiB
+  2x capped at 62 GiB (anon + 48):
+  host RAM: used 28 G, page cache 35 G, shared 1 G
+  table file resident 2.2 GiB
+  2x-floor-48: | | |
+  2x-floor-48: |---|---:|
+  2x-floor-48: | Streaming decode, 1 user, structured / code / prose | 228.1 / 316.0 / 159.9 tok/s |
+  2x-floor-48: | Decode, 2 users, aggregate, structured / code / prose | 330.6 / 430.7 / 255.8 tok/s |
+  2x-floor-48: | Decode, 4 users, aggregate, structured / code / prose | 504.8 / 691.2 / 382.5 tok/s |
+  2x-floor-48: | Decode, 8 users, aggregate, structured / code / prose | 833.5 / 953.1 / 602.1 tok/s |
+  host RAM: used 29 G, page cache 41 G, shared 1 G
+  table file resident 4.0 GiB
+  2x capped at 46 GiB (anon + 32):
+  host RAM: used 25 G, page cache 46 G, shared 1 G
+  table file resident 4.0 GiB
+  2x-floor-32: | | |
+  2x-floor-32: |---|---:|
+  2x-floor-32: | Streaming decode, 1 user, structured / code / prose | 226.5 / 329.3 / 173.9 tok/s |
+  2x-floor-32: | Decode, 2 users, aggregate, structured / code / prose | 347.5 / 475.6 / 266.3 tok/s |
+  2x-floor-32: | Decode, 4 users, aggregate, structured / code / prose | 532.5 / 712.0 / 388.1 tok/s |
+  2x-floor-32: | Decode, 8 users, aggregate, structured / code / prose | 834.0 / 958.5 / 659.5 tok/s |
+  host RAM: used 29 G, page cache 48 G, shared 1 G
+  table file resident 4.8 GiB
+  2x capped at 38 GiB (anon + 24):
+  host RAM: used 27 G, page cache 51 G, shared 1 G
+  table file resident 4.8 GiB
+  2x-floor-24: | | |
+  2x-floor-24: |---|---:|
+  2x-floor-24: | Streaming decode, 1 user, structured / code / prose | 229.7 / 335.4 / 186.8 tok/s |
+  2x-floor-24: | Decode, 2 users, aggregate, structured / code / prose | 362.4 / 497.7 / 249.5 tok/s |
+  2x-floor-24: | Decode, 4 users, aggregate, structured / code / prose | 518.3 / 689.6 / 399.5 tok/s |
+  2x-floor-24: | Decode, 8 users, aggregate, structured / code / prose | 827.3 / 935.7 / 633.7 tok/s |
+  host RAM: used 28 G, page cache 55 G, shared 1 G
+  table file resident 5.5 GiB
+  2x capped at 30 GiB (anon + 16):
+  host RAM: used 28 G, page cache 57 G, shared 1 G
+  table file resident 5.5 GiB
+  2x-floor-16: | | |
+  2x-floor-16: |---|---:|
+  2x-floor-16: | Streaming decode, 1 user, structured / code / prose | 245.1 / 339.0 / 190.2 tok/s |
+  2x-floor-16: | Decode, 2 users, aggregate, structured / code / prose | 369.2 / 486.2 / 251.4 tok/s |
+  2x-floor-16: | Decode, 4 users, aggregate, structured / code / prose | 527.3 / 690.5 / 394.3 tok/s |
+  2x-floor-16: | Decode, 8 users, aggregate, structured / code / prose | 833.8 / 949.1 / 645.6 tok/s |
+  host RAM: used 29 G, page cache 62 G, shared 1 G
+  table file resident 6.1 GiB
+  2x capped at 22 GiB (anon + 8):
+  host RAM: used 26 G, page cache 67 G, shared 1 G
+  table file resident 6.1 GiB
+  2x-floor-8: | | |
+  2x-floor-8: |---|---:|
+  2x-floor-8: | Streaming decode, 1 user, structured / code / prose | 236.1 / 338.5 / 180.9 tok/s |
+  2x-floor-8: | Decode, 2 users, aggregate, structured / code / prose | 362.2 / 507.1 / 272.5 tok/s |
+  2x-floor-8: | Decode, 4 users, aggregate, structured / code / prose | 538.4 / 701.5 / 369.2 tok/s |
+  2x-floor-8: | Decode, 8 users, aggregate, structured / code / prose | 840.8 / 946.1 / 624.9 tok/s |
+  host RAM: used 29 G, page cache 70 G, shared 1 G
+  table file resident 6.7 GiB
+== done 00:40:57
+== 5. repeatability: disk mode, DFlash 2, the same prompts twice to the same server 00:41:06
+  qwen38-1x-020 start exit 0 00:47:53
+  qwen38-2x-030 start exit 0 00:48:57
+  2x disk vs disk: same output: 1/5 prompts byte-identical; differ: ['code', 'prose', 'structured', 'summary']
+  1x disk vs disk: same output: 0/5 prompts byte-identical; differ: ['code', 'math', 'prose', 'structured', 'summary']
+== done (b) 00:49:44
+== 5b. repeatability with the table pinned in RAM (tmpfs shared, the pinned kernel) 00:55:15
+  qwen38-2x-030 start exit 0 01:01:49
+  qwen38-1x-020 start exit 0 01:01:51
+  2x ram vs ram: same output: 0/5 prompts byte-identical; differ: ['code', 'math', 'prose', 'structured', 'summary']
+  1x ram vs ram: same output: 1/5 prompts byte-identical; differ: ['code', 'prose', 'structured', 'summary']
+== 6. quality in disk mode, DFlash 2, thinking on (the recipe's quality_eval.py) 01:02:42
+  qwen38-1x-020 start exit 0 01:09:09
+  qwen38-2x-030 start exit 0 01:09:16
+  2x disk: disk-2x-dflash humaneval: 162/164 passed
+  2x disk: disk-2x-dflash gsm8k: 196/200 passed
+  1x disk: disk-1x-dflash humaneval: 161/164 passed
+  1x disk: disk-1x-dflash gsm8k: 196/200 passed
+== done (c) 01:15:44

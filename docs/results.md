@@ -2,12 +2,104 @@
 
 Every number here was measured on the same box: one CMP 170HX (74 SMs, 64 GiB,
 180 W, PCIe Gen2 x16) in a dual Xeon E5-2697A v4 (Broadwell) host with 204 GiB
-of RAM, driver 610.57.04, Morrowmake's engine at
+of RAM (352 GB at 1600 MT/s for 0.2.0), driver 610.57.04, Morrowmake's engine at
 `18305948acba3f4c4d912cdd56f2202d2ebd94e8`. The two-card recipe served on two
 other cards of the same host for most of it. Raw files are in
 [`bench/results/release-0.1.0/`](../bench/results/release-0.1.0/), the
 development runs in its `development/` folder; the harnesses are in
 [`bench/`](../bench/). Dates are 2026-10-19 to 2026-10-23.
+
+## Release 0.2.0
+
+0.2.0 adds one thing, the n-gram table on disk; the defaults, engine image and
+checkpoints are 0.1.0's. Measured 2026-10-27 on the same box with its memory changed:
+352 GB since that day (0.1.0 ran on 204 GiB), all 24 slots filled, so the memory runs
+at 1600 MT/s instead of 2133. Raw files:
+[`bench/results/release-0.2.0/`](../bench/results/release-0.2.0/) (the run's log is
+`fresh-clone-0.2.0-run.txt`).
+
+### From fresh clones
+
+A fresh clone of this release beside one of the two-card recipe's 0.3.0, this one on
+card 4 with its checkpoint on the same NVMe volume as the table; first both with
+their own pinned tables (the default), then both with
+`PLE_SHARED_DIR=/srv/models/qwen38-ple`, a folder on an XFS volume striped over three
+NVMe drives, which the first start filled. `cmp_recipe_bench.py` as before;
+`concurrency_sweep.py` at 48 users only. Every start's startup check passed.
+
+| | table in RAM (default) | table on disk, DFlash 2 | table on disk, MTP |
+|---|---:|---:|---:|
+| 1 user, structured / code / prose | 200.0 / 295.0 / 146.2 | 226.7 / 277.7 / 131.2 | 170.6 / 194.6 / 140.3 |
+| 2 users, total | 326.6 / 405.4 / 217.9 | 340.3 / 361.3 / 208.6 | 282.3 / 303.4 / 217.2 |
+| 4 users, total | 516.4 / 614.7 / 367.8 | 501.5 / 599.4 / 348.2 | 453.3 / 457.3 / 327.4 |
+| 8 users, total | 785.5 / 792.1 / 598.7 | 752.5 / 763.2 / 538.1 | 710.0 / 696.0 / 513.1 |
+| 48 users, total (`concurrency_sweep.py`) | 1,384 (0.1.0) | 1,315.7 | 1,327.5 |
+| Cold prefill | 4,243 (0.1.0) | 3,376 | — |
+| KV pool | 292,784 tokens | 298,742 tokens | 310,539 tokens |
+| Start to healthy | 1,039 s (with the two-card server pinning its table at the same time) | 348 s (the file written in it) | 389 s |
+
+With the whole table in the page cache the disk costs 4 % at eight users on
+structured and code, 10 % on prose, 5 % at 48 users, and 20 % of prompt reading: a
+long new prompt touches many table pages the card has not mapped yet, and each first
+touch is a fault. That is more than on the two-card recipe (1–4 % at eight users):
+there each card holds half the rows. One-user cells move by more than that between
+runs (structured here has ranged 197.8–226.7), so they say little either way.
+
+### How it works
+
+The engine looks the table up with a Triton kernel that copies rows from pinned host
+memory through a CUDA view of it, inside the step's CUDA graph. A file on disk cannot
+be pinned (`cudaHostRegister` fails: the kernel refuses long-term pins of its pages),
+but on this driver the card can read ordinary host memory directly: the cmpunlocker
+driver is NVIDIA's open kernel modules, which report `Addressing Mode: HMM`. Torch
+and Triton both refuse a tensor over memory CUDA does not know, so the disk path
+passes the table's address to a copy of the kernel as an integer. A page in the page
+cache is read over PCIe as pinned memory is; a page missing from it faults, and the
+kernel reads it from the file. The probe numbers (one lookup: 42–47 µs pinned, about
+227 µs from the mapped file once warm) and the check that both kernels return the same
+bytes are in the two-card recipe's
+[results](https://github.com/ElectroHobo/qwen38-flash-next-w4a16-2x-cmp170hx-recipe/blob/main/docs/results.md#how-it-works-and-what-one-lookup-costs).
+
+### How much RAM the table on disk needs
+
+The server alone with the table on disk, its container capped with
+`docker update --memory` (the cap holds the server's own memory and every page of the
+file it caches), stepping down; the page cache had been dropped before the start, so
+the server cached only what it touched. The server's own memory was 6 GiB; of the
+table, 6–9 GiB stayed cached through these runs.
+
+| Container capped at | 1 user | 8 users, total |
+|---|---:|---:|
+| none (48 GiB of the table cached) | 226.7 / 277.7 / 131.2 | 752.5 / 763.2 / 538.1 |
+| 54 GiB, just after the cap | 178.7 / 230.7 / 100.6 | 720.1 / 702.1 / 474.6 |
+| 38 GiB | 212.9 / 257.4 / 123.4 | 729.8 / 771.2 / 468.4 |
+| 30 GiB | 195.2 / 256.2 / 134.9 | 743.4 / 738.3 / 463.6 |
+| 22 GiB | 218.1 / 266.9 / 138.4 | 767.0 / 767.3 / 466.6 |
+| 14 GiB | 197.7 / 259.9 / 122.1 | 723.7 / 758.9 / 468.1 |
+
+Our three benchmark prompts use little of the table; varied traffic uses more, so
+read these as how small the floor can be, not as a promise. Prose, with the most
+varied word combinations, loses most (13 % at eight users). The first capped row is
+lower than the next ones because it was measured while the kernel was still evicting
+what the start had cached. Under memory pressure from elsewhere on the host, see the
+two-card recipe's results; this recipe on the same test lost 4–20 % at eight users with
+the table whole (prose most), and 11–32 % with 60 % of it cached.
+
+### Same output, and quality
+
+Five fixed prompts (the bench's three, a word problem and a summary), 400 tokens,
+temperature 0, thinking off, sent twice to the same server: with the table pinned in
+RAM 1 of 5 replies came back byte-identical, with the table on disk 0 of 5 (the two-card recipe: 0 and 1).
+The replies part after tens to hundreds of characters on a different, equally
+plausible word. Why, we have not traced; it happens with the table in RAM too, so it
+is not the disk path, and it means RAM against disk cannot be compared byte for byte
+(0 of 5 there, as expected). What is checked exactly is the lookup: the same bytes
+from both kernels ([above](#how-it-works)), and every start compares the
+table file with the checkpoint byte for byte.
+
+So quality is scored: HumanEval and GSM8K (first 200) with the table on disk,
+DFlash 2, thinking on, **161/164, 196/200**, against 0.1.0's 161/164, 195/200 with the table in RAM. Raw:
+`quality-1x-0.2.0-fresh-disk-*`, `same-output-1x-0.2.0-*.json`, `repeat-1x-0.2.0-*.json`.
 
 ## Release 0.1.0
 
@@ -182,8 +274,10 @@ quality: HumanEval 163/164, GSM8K 197/200.
 
 With `PLE_SHARED_DIR` the table is one tmpfs file registered with CUDA instead of
 64 GiB of pinned memory per server. This recipe on it: host shared memory 64 →
-48 GiB, greedy outputs and step times as with its own table (16 users 55.15
-against 55.77 ms per step, 48 users 100.29 against 100.37). Then the two-card
+48 GiB, step times as with its own table (16 users 55.15 against 55.77 ms per
+step, 48 users 100.29 against 100.37). (This said "greedy outputs" too until 0.2.0;
+repeated requests to one server do not match byte for byte on this engine, so that
+comparison showed nothing: [Same output, and quality](#same-output-and-quality).) Then the two-card
 recipe on the same file: both servers together in 48 GiB of shared memory.
 Measured again 2026-10-24 with the release code: this recipe's development copy
 (MTP mode, the checkpoint on an SSD; see the quality footnote above) and the

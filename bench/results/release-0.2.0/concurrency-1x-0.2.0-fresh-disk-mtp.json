@@ -1,0 +1,23 @@
+{
+ "tag": "020-1x-disk-mtp",
+ "model": "qwen3.8-flash-next",
+ "tokens": 700,
+ "rounds": [
+  {
+   "users": 48,
+   "tokens": 33600,
+   "wall_s": 25.029,
+   "aggregate_tok_s": 1342.4,
+   "ms_per_step": 93.74,
+   "tokens_per_request_step": 3.075
+  },
+  {
+   "users": 48,
+   "tokens": 33600,
+   "wall_s": 25.598,
+   "aggregate_tok_s": 1312.6,
+   "ms_per_step": 91.75,
+   "tokens_per_request_step": 3.076
+  }
+ ]
+}

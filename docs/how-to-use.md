@@ -5,7 +5,7 @@
 - One CMP 170HX card exposing 64 GiB, measured on an x16 link, in a Linux host
   with **96 GB of RAM or more** (the n-gram table takes 64 GiB of it as the engine
   allocates it, 48 GiB shared with `PLE_SHARED_DIR`) and NVIDIA driver 580 or
-  newer. Two cards? See the two-card recipe,
+  newer; with less RAM, keep the table on disk ([below](#the-table-on-disk)). Two cards? See the two-card recipe,
   [qwen38-flash-next-w4a16-2x-cmp170hx-recipe](https://github.com/ElectroHobo/qwen38-flash-next-w4a16-2x-cmp170hx-recipe). Add `KV_OFFLOAD_GB` to the RAM figure if you turn the KV
   tier on.
 - Docker with the NVIDIA Container Toolkit, usable by your user.
@@ -92,6 +92,39 @@ refuses to start rather than touch the shared rows; give it another
 it: `rm /dev/shm/qwen38-ple/*` once no server uses it. With Docker Compose,
 uncomment the volume in `docker-compose.yml` and set `PLE_SHARED_DIR` in
 `docker/container.env`.
+
+## The table on disk
+
+For a host with less than 96 GB of RAM, keep the table in a file instead:
+
+```
+PLE_SHARED_DIR=/srv/qwen38-ple   # any folder on a disk filesystem (ext4, xfs, ...)
+```
+
+The first start writes the 48 GiB file there from the checkpoint (it took about
+6 minutes from start to healthy here, the write included); later starts compare
+it with the checkpoint, as a shared table in RAM does. The card reads the rows
+through HMM, inside the same CUDA graph as from RAM, and the kernel's page cache
+keeps the rows in use in RAM. Nothing is pinned: when the host needs the memory
+the kernel takes it back, and those rows come from the file again. Servers given
+the same folder share the file, as in RAM, the two-card recipe's included.
+
+- **It needs HMM:** NVIDIA's open kernel modules, which report
+  `Addressing Mode: HMM` in `nvidia-smi -q` (the cmpunlocker driver builds are
+  these). `./start.sh` and `serve.sh` stop with a message if the card does not.
+- **Put the folder on an SSD.** A row that is not in the page cache is read from
+  the file in the middle of a decode step.
+- **What it costs** (fresh clones, [results](results.md#release-020)): with the
+  whole table cached, 4 % at eight users on structured and code, 10 % on prose, 5 %
+  at 48 users, and prompt reading about 20 % slower; with the whole container
+  capped at 14 GiB, 3–4 % more on structured and code and 13 % on prose, on our
+  prompts. Varied traffic uses more of the table than a benchmark does, so give it
+  more than the floor.
+- **The first minutes after a start are a little slower:** the card faults once on
+  every page of the table it has not read yet.
+- The file stays until you delete it: `rm /srv/qwen38-ple/*` once no server uses
+  it. With Docker Compose, uncomment the volume in `docker-compose.yml` with your
+  folder on both sides and set `PLE_SHARED_DIR` in `docker/container.env`.
 
 ## Keep long contexts around (KV offload)
 

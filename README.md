@@ -1,14 +1,15 @@
 # Qwen3.8-Flash-Next 3 bpw on 1× CMP 170HX
 
 [![engine](https://img.shields.io/badge/engine-vllm--cmp170hx%2018305948ac-blue)](https://github.com/Morrowmake/vllm-cmp170hx/tree/18305948acba3f4c4d912cdd56f2202d2ebd94e8)
-![release](https://img.shields.io/badge/release-0.1.0-2ea44f)
+![release](https://img.shields.io/badge/release-0.2.0-2ea44f)
 
 **Qwen3.8-Flash-Next (125B MoE) on one CMP 170HX card with the full
 262,144-token context: 197.8 / 296.4 / 135.5 tok/s for one user (structured /
 code / prose), 371 tok/s editing code, 799.5 / 791.3 / 586.4 tok/s across
 eight, and up to 48 requests at once — 1,384 tok/s in total with the default
 drafter, 1,403 with the MTP mode. 2- and 3-bit AutoRound experts,
-the FP8 n-gram table in host RAM (one copy can serve several servers), the whole
+the FP8 n-gram table in host RAM or in a file on disk (one copy can serve several
+servers), the whole
 decode step in one CUDA graph, inco.ai's DFlash 2 drafter, RecoverSSM for the
 linear-attention layers, bf16 KV cache and recurrent states.**
 
@@ -17,6 +18,27 @@ linear-attention layers, bf16 KV cache and recurrent states.**
 serves halt95's 4-bit W4A16 build on two CMP 170HX with the same engine, patches
 and n-gram table: faster for one user (350 against 296.4 tok/s on code) and up
 to 128 requests. Both can run on one host from one copy of the table.
+
+**New in 0.2.0: the n-gram table on disk, for hosts with less RAM.** Set
+`PLE_SHARED_DIR` to a folder on a disk filesystem instead of tmpfs and the 48 GiB
+table is a file there: the card reads it through HMM, still inside the one CUDA
+graph per step, and the page cache keeps in RAM as much of it as the host can spare.
+Without that setting 0.2.0 runs as 0.1.0. From fresh clones, 2026-10-27:
+
+| | table in RAM (default) | table on disk |
+|---|---:|---:|
+| 1 user, structured / code / prose | 200.0 / 295.0 / 146.2 | 226.7 / 277.7 / 131.2 |
+| 8 users, total | 785.5 / 792.1 / 598.7 | 752.5 / 763.2 / 538.1 |
+| 48 users, total | 1,384 (0.1.0's release run) | 1,316 |
+| Cold prefill | 4,243 (0.1.0's release run) | 3,376 |
+| HumanEval / GSM8K (first 200) | 161/164, 195/200 (0.1.0) | 161/164, 196/200 |
+| Host memory the server holds | the 48 GiB table pinned (64 GiB as allocated) + 6 GiB | 6 GiB, plus what the page cache keeps of the table |
+| Whole container capped at 14 GiB, 8 users | does not fit | 723.7 / 758.9 / 468.1 |
+
+It needs NVIDIA's open kernel modules with HMM (`nvidia-smi -q` shows
+`Addressing Mode: HMM`; `./start.sh` checks) and 48 GiB of disk for the file.
+How to use it: [The table on disk](docs/how-to-use.md#the-table-on-disk); what it
+costs and why: [results](docs/results.md#release-020).
 
 Serve [klee100/Qwen3.8-Flash-Next-AutoRound-3bpw-MTP](https://huggingface.co/klee100/Qwen3.8-Flash-Next-AutoRound-3bpw-MTP)
 with the FP8 n-gram table of [halt95/Qwen3.8-Flash-Next-W4A16-Merlin](https://huggingface.co/halt95/Qwen3.8-Flash-Next-W4A16-Merlin)
@@ -103,9 +125,15 @@ table not a second copy of the 48 GiB table
 - **1× NVIDIA CMP 170HX exposing 64 GiB**, measured on a PCIe x16 link. The
   n-gram rows are read from host memory over PCIe every step, so a narrower link
   (a card without the capacitor modification trains x4) costs decode; untested.
-- **96 GB of host RAM** (the n-gram table takes 48 GiB, 64 GiB as the engine
-  allocates it; the engine and the host need the rest). Measured on 204 GiB.
-- Linux with NVIDIA driver **580 or newer** (measured on 610.57.04).
+- **96 GB of host RAM** with the n-gram table in RAM (it takes 48 GiB, 64 GiB as
+  the engine allocates it; the engine and the host need the rest). **Much less
+  with the table on disk** (`PLE_SHARED_DIR` on a disk filesystem, 0.2.0): the
+  server holds about 6 GiB and the page cache keeps the rows in use; capped at
+  14 GiB in all it ran within 3–4 % of uncapped on structured and code and 13 % on
+  prose, on our prompts ([results](docs/results.md#how-much-ram-the-table-on-disk-needs)).
+  Measured on 204 GiB (0.1.0) and 352 GB (0.2.0).
+- Linux with NVIDIA driver **580 or newer** (measured on 610.57.04); for the
+  table on disk, the open kernel modules with HMM addressing.
 - Docker with the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html),
   usable by your user: `docker run --rm --gpus all nvidia/cuda:13.3.1-base-ubuntu24.04 nvidia-smi`
   lists the card.
@@ -160,7 +188,8 @@ mounted at `/drafter`, the files from `patches/` over their engine paths
 `VLLM_THIN_GEMM=1`, `VLLM_THIN_GEMM_GLUON=1`, `VLLM_FLA_AUTOTUNE_SKIP_SPILLING=1`,
 `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:False`, peer access off
 (`NCCL_P2P_DISABLE=1`), `CUDA_DEVICE_ORDER=PCI_BUS_ID`; with `PLE_SHARED_DIR` also
-`VLLM_QWEN_PLE_SHARED_DIR` and `VLLM_QWEN_PLE_SHARED_NAME`.
+`VLLM_QWEN_PLE_SHARED_DIR`, `VLLM_QWEN_PLE_SHARED_NAME` and
+`VLLM_QWEN_PLE_SHARED_PIN` (`1` on tmpfs, `0` on disk).
 
 ## Headline numbers
 
@@ -239,7 +268,7 @@ run); a prefix assignment beats `.env` for one run
 | `RECOVER_SSM` | `1` | RecoverSSM for the GDN layers; `0` = the engine's per-draft states (far fewer requests fit) |
 | `SSM_DTYPE` | `bfloat16` | GDN recurrent state precision; `float32` is the checkpoint's |
 | `BLOCK_SIZE` | `912` (`1680` with `float32` states) | attention block size in dflash mode: a multiple of 48 at least the GDN state page |
-| `PLE_SHARED_DIR` | unset | a host tmpfs directory (e.g. `/dev/shm/qwen38-ple`): every server on this host given the same one, this recipe's and the two-card recipe's, shares one 48 GiB copy of the n-gram table |
+| `PLE_SHARED_DIR` | unset | where the n-gram table lives, shared by every server on this host given the same folder (this recipe's and the two-card recipe's): on tmpfs (e.g. `/dev/shm/qwen38-ple`) one 48 GiB copy in RAM; on a disk filesystem (e.g. `/srv/qwen38-ple`) a 48 GiB file read through HMM, for hosts with less RAM ([how-to](docs/how-to-use.md#the-table-on-disk)) |
 | `PLE_SHARED_NAME` | `qwen38-flash-next-ple-fp8` | the table's file name there |
 | `DRAFTER_REPO` / `DRAFTER_REVISION` | inco.ai's, pinned | the DFlash 2 drafter |
 | `MAX_BATCHED` | `3460` | tokens per scheduler step |
