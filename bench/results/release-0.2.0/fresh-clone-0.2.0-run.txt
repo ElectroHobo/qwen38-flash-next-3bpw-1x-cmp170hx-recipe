@@ -265,3 +265,12 @@ saved 5 replies from :18442 to /root/v030-same-1x-disk.json
   030-2x-ram: | 128 | 1933.8 | 146.6 | 2.50 |
   020-1x-ram: | 48 | 1385.8 | 89.3 | 3.07 |
 == done (d) 01:55:26
+== 8. final branch heads, one real start each in disk mode 02:03:30
+  1x start exit 0
+  2x start exit 0
+  2x: qwen38 ·   n-gram table: a file on disk, read through HMM (/srv/models/qwen38-ple, xfs)
+  2x: qwen38 · healthy after 456s
+  2x: [boot-check] PASS: OK; drafts=102 proposed=714 accepted=666
+  1x: qwen38 ·   n-gram table: a file on disk, read through HMM (/srv/models/qwen38-ple, xfs)
+  1x: qwen38 · healthy after 410s
+  1x: [boot-check] PASS: OK; drafts=101 proposed=707 accepted=666
