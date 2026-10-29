@@ -11,16 +11,21 @@ written into the engine's own folders, and the first start fills the cache (~170
 else changes.
 
 Start to `/health`, one start before and one after (the cache already filled), the model's
-files read into the page cache first (DeepSeek's do not fit, so it read from disk both times),
-2026-10-28 (`bench/results/release-0.2.1/start-time-ab.txt`):
+files read into the page cache first, 2026-10-28 (`bench/results/release-0.2.1/start-time-ab.txt`):
 
 | Recipe on this box | before | after |
 |---|---:|---:|
 | this one | 360 s | 300 s |
 | the two-card recipe | 414 s | 304 s |
-| GLM-5.3-Flash, MiMo-V2.6-Flash, DeepSeek-V4.1-Flash, Qwen EXL3 (Morrowmake's) | 349 / 410 / 585 / 401 s | 272 / 302 / 545 / 316 s |
+| Morrowmake's GLM-5.3-Flash and Qwen EXL3 | 349 / 401 s | 272 / 316 s |
+| MiMo-V2.6-Flash (this author's recipe) | 410 s | 302 s |
+| Morrowmake's DeepSeek-V4.1-Flash (two starts each way) | 555 / 552 s | 479 / 479 s |
 
-Every start passed the startup check.
+Every start passed the startup check. DeepSeek's checkpoint does not fit in RAM, so its page
+cache was dropped before each start instead (`start-time-ab-deepseek.txt`), and its generated
+`serve.sh` sets `PYTHONDONTWRITEBYTECODE=1` again, so it was changed too. This table first gave
+DeepSeek 585 → 545 s: that run changed only `start.sh`, the cache never filled, and the
+difference was disk reads. It also called MiMo's recipe Morrowmake's.
 
 ## 0.2.0 — 2026-10-28
 

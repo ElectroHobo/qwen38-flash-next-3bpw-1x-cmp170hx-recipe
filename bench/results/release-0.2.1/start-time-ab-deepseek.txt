@@ -1,0 +1,12 @@
+DeepSeek pyc A/B 2026-10-28 — start.sh and serve.sh, page cache dropped before each start
+    [boot-check] PASS: OK; drafts=127 proposed=777 accepted=644
+  before 1: 555 s, pycache , server env: PYTHONDONTWRITEBYTECODE=1 
+    [boot-check] PASS: OK; drafts=127 proposed=777 accepted=644
+  before 2: 552 s, pycache , server env: PYTHONDONTWRITEBYTECODE=1 
+    [boot-check] PASS: OK; drafts=127 proposed=777 accepted=644
+  fill:     497 s, pycache 163M, server env: PYTHONPYCACHEPREFIX=/cache/pycache 
+    [boot-check] PASS: OK; drafts=127 proposed=777 accepted=644
+  after 1:  479 s, pycache 163M, server env: PYTHONPYCACHEPREFIX=/cache/pycache 
+    [boot-check] PASS: OK; drafts=127 proposed=777 accepted=644
+  after 2:  479 s, pycache 163M, server env: PYTHONPYCACHEPREFIX=/cache/pycache 
+== done 23:05:03; GLM back
